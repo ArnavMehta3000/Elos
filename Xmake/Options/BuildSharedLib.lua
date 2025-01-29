@@ -1,0 +1,6 @@
+option("BuildShared")
+	set_showmenu(true)
+	set_default(false)
+	set_description("Build Elos as a shared library")
+	set_category("root Elos")
+option_end()
