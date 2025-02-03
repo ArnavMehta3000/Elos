@@ -35,3 +35,9 @@ constexpr Enum& operator^=(Enum& lhs, Enum rhs) noexcept                   \
 {                                                                          \
     return lhs = (lhs ^ rhs);                                              \
 }
+
+namespace Elos::Internal
+{
+    template <typename T>
+    concept IsEnum = std::is_enum<T>::value;
+}

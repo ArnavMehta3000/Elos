@@ -25,7 +25,6 @@ if is_mode("release") then
 end
 
 add_defines("UNICODE", "_UNICODE", "NOMINMAX", "NOMCX", "NOSERVICE", "NOHELP", "WIN32_LEAN_AND_MEAN")
-add_rules("ExportAPI")
 add_tests("CompileSuccess", { build_should_pass = true, group = "Compilation" })
 
 
@@ -33,9 +32,19 @@ add_tests("CompileSuccess", { build_should_pass = true, group = "Compilation" })
 target("Elos")
 	set_group("Elos")
 
+	add_rules("ExportAPI")
 	add_includedirs(".", { public = true })
 	add_files("**.cpp")
 	add_headerfiles("**.h")
 
-	add_links("user32")
+	add_links("user32", "gdi32")
+target_end()
+
+target("ElosTest")
+	set_group("Elos")
+
+	add_includedirs(".", { public = true })
+	add_files("Test/*.cpp")
+
+	add_deps("Elos")
 target_end()
