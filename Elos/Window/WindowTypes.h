@@ -1,6 +1,6 @@
 #pragma once
-#include "Elos/Common/StandardTypes.h"
-#include "Elos/Common/EnumFlags.h"
+#include <Elos/Common/StandardTypes.h>
+#include <Elos/Common/EnumFlags.h>
 
 namespace Elos
 {
@@ -14,12 +14,6 @@ namespace Elos
 		Default = Titlebar | Resize | Close
 	};
 	ELOS_ENUM_FLAGS(WindowStyle)
-
-	enum class WindowState : u8
-	{
-		Windowed,
-		Fullscreen
-	};
 
 	struct WindowSize
 	{
