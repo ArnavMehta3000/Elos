@@ -1,7 +1,7 @@
 #include <Elos/Window/Window.h>
 #include <print>
 
-#define USE_HANDLE_EVENT 0
+#define USE_HANDLE_EVENT 1
 
 int main()
 {
@@ -26,10 +26,15 @@ int main()
 		}
 	};
 
+	const auto OnMouseMoveRaw = [&window](const Elos::Event::MouseMovedRaw& e)
+	{
+		std::println("Mouse Moved Raw: {} {}", e.DeltaX, e.DeltaY);
+	};
+
 	while (window.IsOpen())
 	{
 #if USE_HANDLE_EVENT
-		window.HandleEvents(OnTextInput, OnWindowClose, OnEscapePressed);
+		window.HandleEvents(OnTextInput, OnWindowClose, OnEscapePressed, OnMouseMoveRaw);
 #else
 		while (const auto event = window.PollEvent())
 		{
