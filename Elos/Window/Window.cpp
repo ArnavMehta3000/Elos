@@ -98,6 +98,7 @@ namespace Elos
 			this);
 
 		SetWindowLongPtrW(m_handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+		RegisterRawInputDevices();
 
 		SetVisible(true);
 		m_mouse->SetVisible(true);
