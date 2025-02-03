@@ -26,6 +26,11 @@ namespace Elos
 		struct TextInput
 		{
 			char32 UnicodeChar;
+
+			constexpr char AsChar() const
+			{
+				return UnicodeChar <= 0x7F ? static_cast<char>(UnicodeChar) : '?';
+			}
 		};
 
 		struct KeyPressed

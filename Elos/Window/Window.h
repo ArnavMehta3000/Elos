@@ -15,6 +15,35 @@
 
 namespace Elos
 {
+	namespace Internal
+	{
+		// Helper class for event handlers
+		class HandlerDispatcher
+		{
+		private:
+			// Default handler that does nothing for unhandled event types
+			struct DefaultHandler
+			{
+				void operator()(const auto&) const {}
+			};
+
+			// Unpack handlers into a combined callable
+			template<typename... Handlers>
+			struct OverloadSet : DefaultHandler, std::decay_t<Handlers>...
+			{
+				using DefaultHandler::operator();
+				using std::decay_t<Handlers>::operator()...;
+
+				explicit OverloadSet(Handlers&&... handlers)
+					: std::decay_t<Handlers>(std::forward<Handlers>(handlers))... {}
+			};
+
+		public:
+			template<typename... Handlers>
+			static void Dispatch(Window& window, Handlers&&... handlers);
+		};
+	};
+
 	class ELOS_API Window
 	{
 	public:
@@ -46,6 +75,9 @@ namespace Elos
 		
 		std::optional<Event> PollEvent();
 
+		template <typename... Handlers>
+		void HandleEvents(Handlers&&... handlers);
+
 	private:
 		static void RegisterWindowClass();
 		static LRESULT CALLBACK GlobalOnEvent(HWND handle, UINT message, WPARAM wParam, LPARAM lParam);
@@ -56,6 +88,8 @@ namespace Elos
 		void ProcessEvents();
 
 		WindowSize ContentSizeToWindowSize(const WindowSize& size) const;
+
+	private:
 
 	private:
 		WindowHandle      m_handle{ nullptr };
@@ -70,4 +104,24 @@ namespace Elos
 		static u32            s_windowCount;
 		static const wchar_t* s_className;
 	};
+
+	namespace Internal
+	{
+		template<typename... Handlers>
+		void HandlerDispatcher::Dispatch(Window& window, Handlers&&... handlers)
+		{
+			auto combined = OverloadSet<Handlers...>{ std::forward<Handlers>(handlers)... };
+
+			while (auto event = window.PollEvent())
+			{
+				event->visit(combined);
+			}
+		}
+	}
+
+	template<typename... Handlers>
+	void Window::HandleEvents(Handlers&&... handlers)
+	{
+		Internal::HandlerDispatcher::Dispatch(*this, std::forward<Handlers>(handlers)...);
+	}
 }
