@@ -1,8 +1,7 @@
 #pragma once
-
-#include <Elos/Common/FunctionMacros.h>
+#include <Elos/Common/String.h>
 #include <type_traits>
-#include <concepts>
+#include <string_view>
 #include <tuple>
 
 namespace Elos
@@ -44,7 +43,12 @@ namespace Elos
 	};
 
 // Declare an interface
-#define ELOS_DECLARE_INTERFACE(Name) struct Name: public ::Elos::InterfaceTag {}
+#define ELOS_DECLARE_INTERFACE(Name, ConceptRequirements)          \
+	template <typename T> concept Is##Name = requires(T t) \
+	{                                                      \
+		ConceptRequirements                                \
+	};                                                     \
+	struct Name : public ::Elos::InterfaceTag {}
 
 // Verify that a type completely implements an interface
 #define ELOS_VERIFY_INTERFACE(Interface, Type) \
