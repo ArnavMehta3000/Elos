@@ -37,7 +37,7 @@ target("Elos")
 	add_files("**.cpp")
 	add_headerfiles("**.h")
 
-	add_links("user32", "gdi32")
+	add_links("user32", "gdi32", "dwmapi", "shcore")
 target_end()
 
 target("ElosTest")

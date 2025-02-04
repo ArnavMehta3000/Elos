@@ -5,7 +5,8 @@
 
 int main()
 {
-	Elos::Window window("Test Window", { 1280, 720 });
+	Elos::Window window("Test Window", { 1280, 720 }, Elos::WindowStyle::Default);
+	bool isDarkTheme = false;
 
 	const auto OnTextInput = [&window](const Elos::Event::TextInput& e)
 	{
@@ -17,12 +18,17 @@ int main()
 		window.Close();
 	};
 
-	const auto OnEscapePressed = [&window](const Elos::Event::KeyPressed& e)
+	const auto OnEscapePressed = [&window, &isDarkTheme](const Elos::Event::KeyPressed& e)
 	{
 		if (e.Key == Elos::KeyCode::Escape)
 		{
 			std::println("Escape Pressed. Closing...");
 			window.Close();
+		}
+		if (e.Key == Elos::KeyCode::T)
+		{
+			isDarkTheme = !isDarkTheme;
+			window.SetWindowDarkTheme(isDarkTheme);
 		}
 	};
 

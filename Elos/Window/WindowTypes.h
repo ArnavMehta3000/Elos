@@ -6,8 +6,7 @@ namespace Elos
 {
 	enum class WindowStyle : u8
 	{
-		None     = 0,
-		Titlebar = 1 << 0,
+		None     = 0,  // Non-resizable 'splashscreen' style window
 		Resize   = 1 << 1,
 		Close    = 1 << 2,
 

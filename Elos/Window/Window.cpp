@@ -1,5 +1,11 @@
 #include <Elos/Window/Window.h>
 #include <Elos/Common/String.h>
+#include <dwmapi.h>
+#include <shellscalingapi.h>
+
+#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
 
 namespace Elos
 {	
@@ -63,6 +69,8 @@ namespace Elos
 			RegisterWindowClass();
 		}
 
+		SetDPIAwareness();
+
 		// Compute screen position
 		const HDC screenDC = ::GetDC(nullptr);
 		const i32 left     = ::GetDeviceCaps(screenDC, HORZRES) / 2 - static_cast<i32>(size.Width) / 2;
@@ -87,7 +95,8 @@ namespace Elos
 
 		const WindowSize& windowSize = ContentSizeToWindowSize(size);
 
-		m_handle = ::CreateWindowW(
+		m_handle = ::CreateWindowEx(
+			WS_EX_CLIENTEDGE,
 			s_className,
 			StringToWString(title).c_str(),
 			win32Style,
@@ -97,8 +106,18 @@ namespace Elos
 			::GetModuleHandle(nullptr),
 			this);
 
+		if (!m_handle)
+		{
+			return;
+		}
+
 		SetWindowLongPtrW(m_handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
 		RegisterRawInputDevices();
+
+		::ShowWindow(m_handle, SW_SHOW);
+		::UpdateWindow(m_handle);
+		::SetForegroundWindow(m_handle);
+		::SetFocus(m_handle);
 
 		SetVisible(true);
 		m_mouse->SetVisible(true);
@@ -188,6 +207,16 @@ namespace Elos
 	{
 		return m_handle == ::GetForegroundWindow();
 	}
+
+	void Window::SetWindowDarkTheme(bool isDarkTheme) const
+	{
+		BOOL isDarkMode = isDarkTheme;
+
+		::DwmSetWindowAttribute(m_handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &isDarkMode, sizeof(isDarkMode));
+
+		// Force a redraw to apply the new theme
+		::SetWindowPos(m_handle, nullptr, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
+	}
 		
 	std::optional<Event> Window::PollEvent()
 	{
@@ -251,6 +280,11 @@ namespace Elos
 		rawMouse.hwndTarget = m_handle;   // Target our window
 
 		::RegisterRawInputDevices(&rawMouse, 1, sizeof(RAWINPUTDEVICE));
+	}
+
+	void Window::SetDPIAwareness() const
+	{
+		SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 	}
 
 	void Window::ProcessEvent(UINT msg, WPARAM wParam, LPARAM lParam)

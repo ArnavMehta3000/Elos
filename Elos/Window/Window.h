@@ -18,7 +18,7 @@ namespace Elos
 	namespace Internal
 	{
 		// Helper class for event handlers
-		class HandlerDispatcher
+		class WindowEventHandlerDispatcher
 		{
 		private:
 			// Default handler that does nothing for unhandled event types
@@ -72,6 +72,7 @@ namespace Elos
 		void SetVisible(bool visible);
 		void RequestFocus() const;
 		bool HasFocus() const;
+		void SetWindowDarkTheme(bool isDarkTheme) const;
 		
 		std::optional<Event> PollEvent();
 
@@ -83,13 +84,12 @@ namespace Elos
 		static LRESULT CALLBACK GlobalOnEvent(HWND handle, UINT message, WPARAM wParam, LPARAM lParam);
 		
 		void RegisterRawInputDevices() const;
+		void SetDPIAwareness() const;
 		void ProcessEvent(UINT msg, WPARAM wParam, LPARAM lParam);
 		void PushEvent(const Event& event);
 		void ProcessEvents();
 
 		WindowSize ContentSizeToWindowSize(const WindowSize& size) const;
-
-	private:
 
 	private:
 		WindowHandle      m_handle{ nullptr };
@@ -108,7 +108,7 @@ namespace Elos
 	namespace Internal
 	{
 		template<typename... Handlers>
-		void HandlerDispatcher::Dispatch(Window& window, Handlers&&... handlers)
+		void WindowEventHandlerDispatcher::Dispatch(Window& window, Handlers&&... handlers)
 		{
 			auto combined = OverloadSet<Handlers...>{ std::forward<Handlers>(handlers)... };
 
@@ -122,6 +122,6 @@ namespace Elos
 	template<typename... Handlers>
 	void Window::HandleEvents(Handlers&&... handlers)
 	{
-		Internal::HandlerDispatcher::Dispatch(*this, std::forward<Handlers>(handlers)...);
+		Internal::WindowEventHandlerDispatcher::Dispatch(*this, std::forward<Handlers>(handlers)...);
 	}
 }
