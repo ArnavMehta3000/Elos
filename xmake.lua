@@ -1,5 +1,5 @@
 includes("Xmake/**.lua")
-includes("Xmake/**.lua")
+includes("**/xmake.lua")
 
 add_rules("mode.debug", "mode.release")
 
@@ -38,13 +38,4 @@ target("Elos")
 	add_headerfiles("**.h")
 
 	add_links("user32", "gdi32", "dwmapi", "shcore")
-target_end()
-
-target("ElosTest")
-	set_group("Elos")
-
-	add_includedirs(".", { public = true })
-	add_files("Test/*.cpp")
-
-	add_deps("Elos")
 target_end()
