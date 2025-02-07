@@ -33,7 +33,7 @@ void DoRender(T& renderable)
 	MAYBE_UNUSED bool isVisible = renderable.IsVisible();
 }
 
-template <Elos::ImplementsInterface<ISerializable> T>
+template <IsISerializable T>
 void DoSerialize(T& serializable)
 {
 	std::string data = serializable.Serialize();
@@ -43,8 +43,6 @@ void DoSerialize(T& serializable)
 
 int main()
 {
-
-	std::println();
 	GameObject o;
 	
 	DoRender(o);
