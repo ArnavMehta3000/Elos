@@ -544,7 +544,7 @@ namespace Elos
 
 	Matrix Matrix::CreateOrthographicOffCentre(f32 left, f32 right, f32 top, f32 bottom, f32 nearPlaneZ, f32 farPlaneZ) noexcept
 	{
-		return DirectX::XMMatrixOrthographicOffCenterRH(left, right, bottom, top, nearPlaneZ, farPlaneZ) :
+		return DirectX::XMMatrixOrthographicOffCenterRH(left, right, bottom, top, nearPlaneZ, farPlaneZ);
 	}
 
 	Matrix Matrix::CreateLookAt(const Vector3f& position, const Vector3f& target, const Vector3f& up) noexcept
