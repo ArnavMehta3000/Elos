@@ -94,6 +94,72 @@ namespace Elos::Internal
 		constexpr VectorBase() noexcept : Base() {}
 		VectorBase(DirectX::XMVECTOR v) : Base() { Ops::Store(this, v); }
 
+		// Conversion constructor from other vector types of same dimension
+		template<DirectXScalar OtherType>
+		explicit constexpr VectorBase(const VectorBase<OtherType, N>& other) noexcept : Base()
+		{
+			if constexpr (std::is_same_v<Type, OtherType>) 
+			{
+				*this = other;
+			}
+			else {
+				// Convert each component
+				if constexpr (N >= 1) this->x = static_cast<Type>(other.x);
+				if constexpr (N >= 2) this->y = static_cast<Type>(other.y);
+				if constexpr (N >= 3) this->z = static_cast<Type>(other.z);
+				if constexpr (N >= 4) this->w = static_cast<Type>(other.w);
+			}
+		}
+
+		// Conversion constructor from vector with different dimension
+		template<DirectXScalar OtherType, std::size_t M> requires (M >= 2 && M <= 4)
+		explicit constexpr VectorBase(const VectorBase<OtherType, M>& other) noexcept : Base()
+		{
+			constexpr std::size_t MinDim = std::min(N, M);
+
+			// Zero-initialize all components first
+			if constexpr (N >= 1) this->x = Type(0);
+			if constexpr (N >= 2) this->y = Type(0);
+			if constexpr (N >= 3) this->z = Type(0);
+			if constexpr (N >= 4) this->w = Type(0);
+
+			// Copy components up to the minimum dimension
+			if constexpr (MinDim >= 1) this->x = static_cast<Type>(other.x);
+			if constexpr (MinDim >= 2) this->y = static_cast<Type>(other.y);
+			if constexpr (MinDim >= 3) this->z = static_cast<Type>(other.z);
+			if constexpr (MinDim >= 4) this->w = static_cast<Type>(other.w);
+
+			// For vectors being converted to higher dimensions:
+			// - Set w to 1 for points (Vector4)
+			// - Set w to 0 for directions (Vector4)
+			if constexpr (N == 4 && M < 4)
+			{
+				this->w = Type(1); // Assuming point by default
+			}
+		}
+
+		// Implicit conversion operator for same-dimension, same-type vectors
+		template<DirectXScalar OtherType> requires std::is_same_v<Type, OtherType>
+		constexpr operator VectorBase<OtherType, N>() const noexcept
+		{
+			return *this;
+		}
+
+		// Explicit conversion operator for same-dimension, different-type vectors
+		template<DirectXScalar OtherType> requires (!std::is_same_v<Type, OtherType>)
+		explicit constexpr operator VectorBase<OtherType, N>() const noexcept
+		{
+			return VectorBase<OtherType, N>(*this);
+		}
+
+		// Explicit conversion operator for different-dimension vectors
+		template<DirectXScalar OtherType, std::size_t M> requires (M >= 2 && M <= 4 && M != N)
+		explicit constexpr operator VectorBase<OtherType, M>() const noexcept
+		{
+			return VectorBase<OtherType, M>(*this);
+		}
+
+
 		NODISCARD constexpr operator DirectX::XMVECTOR() const { return Ops::Load(this); }
 		NODISCARD constexpr VectorBase& operator=(const DirectX::XMVECTOR& v) { Ops::Store(this, v); return *this; }
 
