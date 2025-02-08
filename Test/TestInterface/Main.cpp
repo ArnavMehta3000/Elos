@@ -1,7 +1,6 @@
 #include <Elos/Common/FunctionMacros.h>
 #include <Elos/Interface/Interface.h>
 #include <string>
-#include <print>
 
 ELOS_DECLARE_INTERFACE(IRenderable,
 	{ t.Render() } -> std::same_as<void>;

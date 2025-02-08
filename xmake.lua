@@ -35,6 +35,7 @@ target("Elos")
 	add_rules("ExportAPI")
 	add_includedirs(".", { public = true })
 	add_files("**.cpp")
+	add_extrafiles("**.inl")
 	add_headerfiles("**.h", { install = true })
 
 	add_links("user32", "gdi32", "dwmapi", "shcore")
