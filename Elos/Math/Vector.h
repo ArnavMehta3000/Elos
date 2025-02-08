@@ -69,7 +69,58 @@ namespace Elos::Internal
 	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(i32, 4, DirectX::XMINT4, SInt4);
 	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(u32, 2, DirectX::XMUINT2, UInt2);
 	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(u32, 3, DirectX::XMUINT3, UInt3);
-	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(u32, 4, DirectX::XMUINT4, UInt4);
+	template<> struct DirectXVectorTypeMap<u32, 4> {
+		using Type = DirectX::XMUINT4; static constexpr u32 VectorSize = 4; static inline auto Load(const Type* v) {
+			return DirectX::XMLoadUInt4(v);
+		} static inline auto Store(Type* dest, DirectX::XMVECTOR v) {
+			DirectX::XMStoreUInt4(dest, v);
+		} static inline auto Add(DirectX::XMVECTOR lhs, DirectX::XMVECTOR rhs) {
+			return DirectX::XMVectorAdd(lhs, rhs);
+		} static inline auto Subtract(DirectX::XMVECTOR lhs, DirectX::XMVECTOR rhs) {
+			return DirectX::XMVectorSubtract(lhs, rhs);
+		} static inline auto Multiply(DirectX::XMVECTOR lhs, DirectX::XMVECTOR rhs) {
+			return DirectX::XMVectorMultiply(lhs, rhs);
+		} static inline auto Divide(DirectX::XMVECTOR lhs, DirectX::XMVECTOR rhs) {
+			return DirectX::XMVectorDivide(lhs, rhs);
+		} static inline auto Scale(DirectX::XMVECTOR v, f32 scalar) {
+			return DirectX::XMVectorScale(v, scalar);
+		} static inline auto Negate(DirectX::XMVECTOR v) {
+			return DirectX::XMVectorNegate(v);
+		} static inline auto MultiplyScalar(DirectX::XMVECTOR v, f32 scalar) {
+			return DirectX::XMVectorScale(v, scalar);
+		} static inline auto Dot(DirectX::XMVECTOR v1, DirectX::XMVECTOR v2) {
+			return DirectX::XMVector4Dot(v1, v2);
+		} static inline auto Normalize(DirectX::XMVECTOR v) {
+			return DirectX::XMVector4Normalize(v);
+		} static inline auto Length(DirectX::XMVECTOR v) {
+			return DirectX::XMVector4Length(v);
+		} static inline auto LengthSquared(DirectX::XMVECTOR v) {
+			return DirectX::XMVector4LengthSq(v);
+		} static inline auto Clamp(DirectX::XMVECTOR v, DirectX::XMVECTOR min, DirectX::XMVECTOR max) {
+			return DirectX::XMVectorClamp(v, min, max);
+		} static inline auto Clamp(DirectX::XMVECTOR v, f32 min, f32 max) {
+			return DirectX::XMVector4ClampLength(v, min, max);
+		} static inline auto Distance(DirectX::XMVECTOR v1, DirectX::XMVECTOR v2) {
+			return DirectX::XMVector4Length(DirectX::XMVectorSubtract(v2, v1));
+		} static inline auto DistanceSquared(DirectX::XMVECTOR v1, DirectX::XMVECTOR v2) {
+			return DirectX::XMVector4LengthSq(DirectX::XMVectorSubtract(v2, v1));
+		} static inline auto Lerp(DirectX::XMVECTOR v1, DirectX::XMVECTOR v2, f32 t) {
+			return DirectX::XMVectorLerp(v1, v2, t);
+		} static inline auto Reflect(DirectX::XMVECTOR incident, DirectX::XMVECTOR normal) {
+			return DirectX::XMVector4Reflect(incident, normal);
+		} static inline auto Refract(DirectX::XMVECTOR incident, DirectX::XMVECTOR normal, f32 index) {
+			return DirectX::XMVector4Refract(incident, normal, index);
+		} template<typename = std::enable_if_t<4 <= 3>> static inline auto Cross(DirectX::XMVECTOR v1, DirectX::XMVECTOR v2) {
+			if constexpr (4 == 2) {
+				return DirectX::XMVector2Cross(v1, v2);
+			}
+			else if constexpr (4 == 3) {
+				return DirectX::XMVector3Cross(v1, v2);
+			}
+		} template<typename = std::enable_if_t<4 == 4>> static inline auto Cross(const DirectX::XMVECTOR& v1, const DirectX::XMVECTOR& v2, const DirectX::XMVECTOR& v3) noexcept {
+			return DirectX::XMVector4Cross(v1, v2, v3);
+		}
+	};
 
 #undef ELOS_MATH_DECLARE_VECTOR_TYPE_MAP
 
