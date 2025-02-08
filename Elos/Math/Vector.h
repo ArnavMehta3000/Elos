@@ -1,13 +1,10 @@
 #pragma once
 
 #include <Elos/Math/MathBase.h>
-#include <concepts>
+#include <algorithm>
 
 namespace Elos::Internal
-{
-	template <typename T>
-	concept DirectXScalar = std::same_as<T, f32> || std::same_as<T, i32> || std::same_as<T, u32>;
-		
+{		
 	template <DirectXScalar T, std::size_t N>
 	struct DirectXVectorTypeMap
 	{
@@ -85,7 +82,7 @@ namespace Elos::Internal
 	
 #undef DX_TYPE_MAP
 
-	
+	// Base class for all vectors. Using the right handed coordinate system
 	template <DirectXScalar Type, std::size_t N> requires (N >= 2 && N <= 4)
 	class VectorBase : public DirectXVectorType<Type, N>
 	{
@@ -140,6 +137,81 @@ namespace Elos::Internal
 		
 		template<typename = std::enable_if_t<N == 4>>
 		NODISCARD constexpr VectorBase Cross(const VectorBase& v1, const VectorBase& v2) noexcept { return Ops::Cross(*this, v1, v2); }
+
+		static constexpr inline VectorBase Zero() noexcept
+		{
+			VectorBase result;
+			std::fill_n(&result.x, N, Type(0));
+			return result;
+		}
+
+		static constexpr inline VectorBase One() noexcept
+		{
+			VectorBase result;
+			std::fill_n(&result.x, N, Type(1));
+			return result;
+		}
+
+		static constexpr inline VectorBase UnitX() noexcept
+		{
+			VectorBase result = Zero();
+			result.x = Type(1);
+			return result;
+		}
+
+		static constexpr inline VectorBase UnitY() noexcept
+		{
+			VectorBase result = Zero();
+			result.y = Type(1);
+			return result;
+		}
+
+		template<typename = std::enable_if_t<(N >= 3)>>
+		static constexpr inline VectorBase UnitZ() noexcept
+		{
+			VectorBase result = Zero();
+			result.z = Type(1);
+			return result;
+		}
+
+		static constexpr inline VectorBase Right() noexcept { return UnitX(); }
+		
+		static constexpr inline VectorBase Left() noexcept 
+		{
+			auto result = UnitX();
+			result.x = Type(-1);
+			return result;
+		}
+
+		static constexpr inline VectorBase Up() noexcept { return UnitY(); }
+		static constexpr inline VectorBase Down() noexcept 
+		{
+			auto result = UnitY();
+			result.y = Type(-1);
+			return result;
+		}
+
+		template<typename = std::enable_if_t<(N >= 3)>>
+		static constexpr inline VectorBase Forward() noexcept
+		{
+			VectorBase result = Zero();
+			result.z = Type(-1);
+			return result;
+		}
+
+		template<typename = std::enable_if_t<(N >= 3)>>
+		static constexpr inline VectorBase Backward() noexcept
+		{
+			VectorBase result = Zero();
+			result.z = Type(1);
+			return result;
+		}
+
+		template<typename = std::enable_if_t<(N == 2)>>
+		static constexpr inline VectorBase Forward2D() noexcept { return Up(); }
+
+		template<typename = std::enable_if_t<(N == 2)>>
+		static constexpr inline VectorBase Backward2D() noexcept { return Down(); }
 	};
 }
 
