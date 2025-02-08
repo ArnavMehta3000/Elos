@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Elos/Math/MathBase.h>
+#include "Quaternion.h"
 
 namespace Elos::Internal
 {		
@@ -40,6 +41,7 @@ namespace Elos::Internal
 		static inline auto Lerp(DirectX::XMVECTOR v1, DirectX::XMVECTOR v2, f32 t)                   { return DirectX::XMVectorLerp(v1, v2, t);                                    } \
 		static inline auto Reflect(DirectX::XMVECTOR incident, DirectX::XMVECTOR normal)             { return DirectX::XMVector##N##Reflect(incident, normal);                     } \
 		static inline auto Refract(DirectX::XMVECTOR incident, DirectX::XMVECTOR normal, f32 index)  { return DirectX::XMVector##N##Refract(incident, normal, index);              } \
+		static inline auto AngleBetween(DirectX::XMVECTOR v1, DirectX::XMVECTOR v2)                  { return DirectX::XMVector##N##AngleBetweenVectors(v1, v2);                   } \
 																																													 \
 		template<typename = std::enable_if_t<N <= 3>>                                                                                                                                \
 		static inline auto Cross(DirectX::XMVECTOR v1, DirectX::XMVECTOR v2)                                                                                                         \
@@ -69,58 +71,7 @@ namespace Elos::Internal
 	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(i32, 4, DirectX::XMINT4, SInt4);
 	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(u32, 2, DirectX::XMUINT2, UInt2);
 	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(u32, 3, DirectX::XMUINT3, UInt3);
-	template<> struct DirectXVectorTypeMap<u32, 4> {
-		using Type = DirectX::XMUINT4; static constexpr u32 VectorSize = 4; static inline auto Load(const Type* v) {
-			return DirectX::XMLoadUInt4(v);
-		} static inline auto Store(Type* dest, DirectX::XMVECTOR v) {
-			DirectX::XMStoreUInt4(dest, v);
-		} static inline auto Add(DirectX::XMVECTOR lhs, DirectX::XMVECTOR rhs) {
-			return DirectX::XMVectorAdd(lhs, rhs);
-		} static inline auto Subtract(DirectX::XMVECTOR lhs, DirectX::XMVECTOR rhs) {
-			return DirectX::XMVectorSubtract(lhs, rhs);
-		} static inline auto Multiply(DirectX::XMVECTOR lhs, DirectX::XMVECTOR rhs) {
-			return DirectX::XMVectorMultiply(lhs, rhs);
-		} static inline auto Divide(DirectX::XMVECTOR lhs, DirectX::XMVECTOR rhs) {
-			return DirectX::XMVectorDivide(lhs, rhs);
-		} static inline auto Scale(DirectX::XMVECTOR v, f32 scalar) {
-			return DirectX::XMVectorScale(v, scalar);
-		} static inline auto Negate(DirectX::XMVECTOR v) {
-			return DirectX::XMVectorNegate(v);
-		} static inline auto MultiplyScalar(DirectX::XMVECTOR v, f32 scalar) {
-			return DirectX::XMVectorScale(v, scalar);
-		} static inline auto Dot(DirectX::XMVECTOR v1, DirectX::XMVECTOR v2) {
-			return DirectX::XMVector4Dot(v1, v2);
-		} static inline auto Normalize(DirectX::XMVECTOR v) {
-			return DirectX::XMVector4Normalize(v);
-		} static inline auto Length(DirectX::XMVECTOR v) {
-			return DirectX::XMVector4Length(v);
-		} static inline auto LengthSquared(DirectX::XMVECTOR v) {
-			return DirectX::XMVector4LengthSq(v);
-		} static inline auto Clamp(DirectX::XMVECTOR v, DirectX::XMVECTOR min, DirectX::XMVECTOR max) {
-			return DirectX::XMVectorClamp(v, min, max);
-		} static inline auto Clamp(DirectX::XMVECTOR v, f32 min, f32 max) {
-			return DirectX::XMVector4ClampLength(v, min, max);
-		} static inline auto Distance(DirectX::XMVECTOR v1, DirectX::XMVECTOR v2) {
-			return DirectX::XMVector4Length(DirectX::XMVectorSubtract(v2, v1));
-		} static inline auto DistanceSquared(DirectX::XMVECTOR v1, DirectX::XMVECTOR v2) {
-			return DirectX::XMVector4LengthSq(DirectX::XMVectorSubtract(v2, v1));
-		} static inline auto Lerp(DirectX::XMVECTOR v1, DirectX::XMVECTOR v2, f32 t) {
-			return DirectX::XMVectorLerp(v1, v2, t);
-		} static inline auto Reflect(DirectX::XMVECTOR incident, DirectX::XMVECTOR normal) {
-			return DirectX::XMVector4Reflect(incident, normal);
-		} static inline auto Refract(DirectX::XMVECTOR incident, DirectX::XMVECTOR normal, f32 index) {
-			return DirectX::XMVector4Refract(incident, normal, index);
-		} template<typename = std::enable_if_t<4 <= 3>> static inline auto Cross(DirectX::XMVECTOR v1, DirectX::XMVECTOR v2) {
-			if constexpr (4 == 2) {
-				return DirectX::XMVector2Cross(v1, v2);
-			}
-			else if constexpr (4 == 3) {
-				return DirectX::XMVector3Cross(v1, v2);
-			}
-		} template<typename = std::enable_if_t<4 == 4>> static inline auto Cross(const DirectX::XMVECTOR& v1, const DirectX::XMVECTOR& v2, const DirectX::XMVECTOR& v3) noexcept {
-			return DirectX::XMVector4Cross(v1, v2, v3);
-		}
-	};
+	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(u32, 4, DirectX::XMUINT4, UInt4);
 
 #undef ELOS_MATH_DECLARE_VECTOR_TYPE_MAP
 
@@ -135,6 +86,15 @@ namespace Elos::Internal
 		using Base::Base;
 		constexpr VectorBase() noexcept : Base() {}
 		VectorBase(DirectX::XMVECTOR v) : Base() { Ops::Store(this, v); }
+
+		// Single value constructor (sets all components to the same value)
+		explicit constexpr VectorBase(Type value) noexcept : Base()
+		{
+			if constexpr (N >= 1) this->x = value;
+			if constexpr (N >= 2) this->y = value;
+			if constexpr (N >= 3) this->z = value;
+			if constexpr (N >= 4) this->w = value;
+		}
 
 		// Conversion constructor from other vector types of same dimension
 		template<DirectXScalar OtherType>
@@ -180,6 +140,31 @@ namespace Elos::Internal
 			}
 		}
 
+		// Initializer list constructor
+		constexpr VectorBase(std::initializer_list<Type> list) noexcept : Base()
+		{
+			const size_t count = std::min(list.size(), static_cast<size_t>(N));
+			auto it = list.begin();
+
+			if constexpr (N >= 1 && count >= 1) this->x = *it++;
+			if constexpr (N >= 2 && count >= 2) this->y = *it++;
+			if constexpr (N >= 3 && count >= 3) this->z = *it++;
+			if constexpr (N >= 4 && count >= 4) this->w = *it;
+
+			// Zero-initialize remaining components
+			if constexpr (N >= 2 && count < 2) this->y = Type(0);
+			if constexpr (N >= 3 && count < 3) this->z = Type(0);
+			if constexpr (N >= 4 && count < 4) this->w = Type(0);
+		}
+
+		// Copy and move constructors
+		constexpr VectorBase(const VectorBase& other) noexcept = default;
+		constexpr VectorBase(VectorBase&& other) noexcept = default;
+
+		// Assignment operators
+		constexpr VectorBase& operator=(const VectorBase& other) noexcept = default;
+		constexpr VectorBase& operator=(VectorBase&& other) noexcept = default;
+
 		// Implicit conversion operator for same-dimension, same-type vectors
 		template<DirectXScalar OtherType> requires std::is_same_v<Type, OtherType>
 		constexpr operator VectorBase<OtherType, N>() const noexcept
@@ -220,6 +205,18 @@ namespace Elos::Internal
 		NODISCARD constexpr VectorBase& operator*=(Type scalar) noexcept           { *this = *this * scalar; return *this;  }
 		NODISCARD constexpr VectorBase& operator/=(Type scalar) noexcept           { *this = *this / scalar; return *this;  }
 
+		NODISCARD constexpr bool operator==(const VectorBase& rhs) const noexcept
+		{
+			if constexpr (N == 2) return this->x == rhs.x && this->y == rhs.y;
+			if constexpr (N == 3) return this->x == rhs.x && this->y == rhs.y && this->z == rhs.z;
+			if constexpr (N == 4) return this->x == rhs.x && this->y == rhs.y && this->z == rhs.z && this->w == rhs.w;
+		}
+
+		NODISCARD constexpr bool operator!=(const VectorBase& rhs) const noexcept
+		{
+			return !(*this == rhs);
+		}
+
 		void NormalizeThis() noexcept { *this = Ops::Normalize(*this); }
 
 		NODISCARD constexpr f32 Dot(const VectorBase& rhs) const noexcept                                    { return DirectX::XMVectorGetX(Ops::Dot(*this, rhs)); }
@@ -230,6 +227,7 @@ namespace Elos::Internal
 		NODISCARD constexpr VectorBase Reflect(const VectorBase& normal) const noexcept                      { return Ops::Reflect(*this, normal); }
 		NODISCARD constexpr VectorBase Refract(const VectorBase& normal, f32 refractionIndex) const noexcept { return Ops::Refract(*this, normal, refractionIndex); }
 		NODISCARD constexpr VectorBase Lerp(const VectorBase& other, f32 t) const noexcept                   { return Ops::Lerp(*this, other, t); }
+		NODISCARD constexpr VectorBase AngelBetween(const VectorBase& other) const noexcept                   { return Ops::AngleBetween(*this, other); }
 		NODISCARD void Clamp(f32 min = 0.0f, f32 max = 0.1f) noexcept                                        { *this = Ops::Clamp(*this, min, max); }
 
 		NODISCARD constexpr VectorBase SmoothStep(const VectorBase& other, f32 t) const noexcept
@@ -245,6 +243,13 @@ namespace Elos::Internal
 		
 		template<typename = std::enable_if_t<N == 4>>
 		NODISCARD constexpr VectorBase Cross(const VectorBase& v1, const VectorBase& v2) noexcept { return Ops::Cross(*this, v1, v2); }
+
+		NODISCARD constexpr VectorBase ProjectOnto(const VectorBase& other) const noexcept
+		{
+			const float dotProduct = Dot(other);
+			const float lengthSq = other.LengthSquared();
+			return other * (dotProduct / lengthSq);
+		}
 
 		static constexpr inline VectorBase Zero() noexcept
 		{
