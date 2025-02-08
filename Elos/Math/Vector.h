@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Elos/Math/MathBase.h>
-#include <algorithm>
 
 namespace Elos::Internal
 {		
@@ -13,19 +12,11 @@ namespace Elos::Internal
 
 	template<DirectXScalar T, std::size_t N>
 	using DirectXVectorType = typename DirectXVectorTypeMap<T, N>::Type;
-
-	template<typename T>
-	concept HasDirectXOperations = requires(const T & v, DirectX::XMVECTOR xm) 
-	{
-		{ v.Load(&v) } -> std::same_as<DirectX::XMVECTOR>;
-		{ v.Store(&v, xm) } -> std::same_as<void>;
-	};
 	
-#define DX_TYPE_MAP(T, N, BaseType, Func)                                                                                                                                            \
+#define ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(T, N, BaseType, Func)                                                                                                                                            \
 	template<>                                                                                                                                                                       \
 	struct DirectXVectorTypeMap<T, N>                                                                                                                                                \
 	{                                                                                                                                                                                \
-	public:                                                                                                                                                                          \
 		using Type = BaseType;                                                                                                                                                       \
 		static constexpr u32 VectorSize = N;                                                                                                                                         \
 																																												     \
@@ -70,17 +61,17 @@ namespace Elos::Internal
 		}                                                                                                                                                                            \
 	}
 
-	DX_TYPE_MAP(f32, 2, DirectX::XMFLOAT2, Float2);
-	DX_TYPE_MAP(f32, 3, DirectX::XMFLOAT3, Float3);
-	DX_TYPE_MAP(f32, 4, DirectX::XMFLOAT4, Float4);
-	DX_TYPE_MAP(i32, 2, DirectX::XMINT2, SInt2);
-	DX_TYPE_MAP(i32, 3, DirectX::XMINT3, SInt3);
-	DX_TYPE_MAP(i32, 4, DirectX::XMINT4, SInt4);
-	DX_TYPE_MAP(u32, 2, DirectX::XMUINT2, UInt2);
-	DX_TYPE_MAP(u32, 3, DirectX::XMUINT3, UInt3);
-	DX_TYPE_MAP(u32, 4, DirectX::XMUINT4, UInt4);
-	
-#undef DX_TYPE_MAP
+	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(f32, 2, DirectX::XMFLOAT2, Float2);
+	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(f32, 3, DirectX::XMFLOAT3, Float3);
+	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(f32, 4, DirectX::XMFLOAT4, Float4);
+	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(i32, 2, DirectX::XMINT2, SInt2);
+	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(i32, 3, DirectX::XMINT3, SInt3);
+	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(i32, 4, DirectX::XMINT4, SInt4);
+	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(u32, 2, DirectX::XMUINT2, UInt2);
+	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(u32, 3, DirectX::XMUINT3, UInt3);
+	ELOS_MATH_DECLARE_VECTOR_TYPE_MAP(u32, 4, DirectX::XMUINT4, UInt4);
+
+#undef ELOS_MATH_DECLARE_VECTOR_TYPE_MAP
 
 	// Base class for all vectors. Using the right handed coordinate system
 	template <DirectXScalar Type, std::size_t N> requires (N >= 2 && N <= 4)
