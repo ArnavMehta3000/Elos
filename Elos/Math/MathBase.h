@@ -4,6 +4,7 @@
 #include <Elos/Common/StandardTypes.h>
 #include <DirectXMath.h>
 #include <concepts>
+#include <algorithm>
 
 namespace Elos
 {
