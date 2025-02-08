@@ -284,13 +284,13 @@ namespace Elos::Internal
 
 namespace Elos
 {
-	using Vector2f = Internal::VectorBase<f32, 2>;
-	using Vector3f = Internal::VectorBase<f32, 3>;
-	using Vector4f = Internal::VectorBase<f32, 4>;
-	using Vector2i = Internal::VectorBase<i32, 2>;
-	using Vector3i = Internal::VectorBase<i32, 3>;
-	using Vector4i = Internal::VectorBase<i32, 4>;
-	using Vector2u = Internal::VectorBase<u32, 2>;
-	using Vector3u = Internal::VectorBase<u32, 3>;
-	using Vector4u = Internal::VectorBase<u32, 4>;
+	using Vector2f = Internal::VectorBase<f32, 2>;  // 2 dimensional floating point vector
+	using Vector3f = Internal::VectorBase<f32, 3>;  // 3 dimensional floating point vector
+	using Vector4f = Internal::VectorBase<f32, 4>;  // 4 dimensional floating point vector
+	using Vector2i = Internal::VectorBase<i32, 2>;  // 2 dimensional integer vector
+	using Vector3i = Internal::VectorBase<i32, 3>;  // 3 dimensional integer vector
+	using Vector4i = Internal::VectorBase<i32, 4>;  // 4 dimensional integer vector
+	using Vector2u = Internal::VectorBase<u32, 2>;  // 2 dimensional unsigned integer vector
+	using Vector3u = Internal::VectorBase<u32, 3>;  // 3 dimensional unsigned integer vector
+	using Vector4u = Internal::VectorBase<u32, 4>;  // 4 dimensional unsigned integer vector
 }
