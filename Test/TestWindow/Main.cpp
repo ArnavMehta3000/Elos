@@ -1,4 +1,5 @@
 #include <Elos/Window/Window.h>
+#include <Elos/Window/Utils/MessageBox.h>
 #include <print>
 
 #define USE_HANDLE_EVENT 1
@@ -15,7 +16,19 @@ int main()
 
 	const auto OnWindowClose = [&window](const Elos::Event::Closed&)
 	{
-		window.Close();
+		const Elos::MessageBoxDesc desc
+		{
+			.Window = window.GetHandle(),
+			.Title = "Close Window Requested",
+			.Text = "Are you sure you want to close the window?",
+			.Flags = Elos::MessageBoxFlags{}
+		};
+		
+		const Elos::MessageBoxReturnValue value = Elos::ShowMessageBox(desc);
+		if (value == Elos::MessageBoxReturnValue::Ok)
+		{
+			window.Close();
+		}
 	};
 
 	const auto OnEscapePressed = [&window, &isDarkTheme](const Elos::Event::KeyPressed& e)
