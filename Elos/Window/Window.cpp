@@ -231,6 +231,26 @@ namespace Elos
 
 		return std::nullopt;
 	}
+
+	void Window::SetWidget(std::unique_ptr<Widget> widget)
+	{
+		if (m_widget)
+		{
+			m_widget->Destroy();
+		}
+
+		m_widget = std::move(widget);
+
+		if (m_widget)
+		{
+			m_widget->Create(*this);
+			// Set initial size to match window's client area
+			m_widget->SetSize(GetSize());
+			m_widget->Layout();
+
+			::UpdateWindow(GetHandle());
+		}
+	}
 	
 	void Window::RegisterWindowClass()
 	{
@@ -311,6 +331,13 @@ namespace Elos
 				if (m_size.Width != width || m_size.Height != height)
 				{
 					m_size = { width, height };
+
+					// Update root widget size
+					if (m_widget)
+					{
+						m_widget->SetSize({ width, height });
+					}
+
 					PushEvent(Event::Resized{ width, height });
 				}
 			}

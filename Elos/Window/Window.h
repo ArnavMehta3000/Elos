@@ -8,6 +8,7 @@
 #include <Elos/Window/Event.h>
 #include <Elos/Window/Input/Keyboard.h>
 #include <Elos/Window/Input/Mouse.h>
+#include <Elos/Window/UI/Widget.h>
 #include <optional>
 #include <queue>
 #include <memory>
@@ -15,6 +16,7 @@
 
 namespace Elos
 {
+
 	namespace Internal
 	{
 		// Helper class for event handlers
@@ -79,6 +81,9 @@ namespace Elos
 		template <typename... Handlers>
 		void HandleEvents(Handlers&&... handlers);
 
+		void SetWidget(std::unique_ptr<Widget> widget);
+		NODISCARD Widget* GetRootWidget() const { return m_widget.get(); }
+
 	private:
 		static void RegisterWindowClass();
 		static LRESULT CALLBACK GlobalOnEvent(HWND handle, UINT message, WPARAM wParam, LPARAM lParam);
@@ -99,7 +104,8 @@ namespace Elos
 		char16            m_surrogate{ 0 };
 
 		std::unique_ptr<Keyboard> m_keyboard;
-		std::unique_ptr<Mouse> m_mouse;
+		std::unique_ptr<Mouse>    m_mouse;
+		std::unique_ptr<Widget>   m_widget;
 
 		static u32            s_windowCount;
 		static const wchar_t* s_className;

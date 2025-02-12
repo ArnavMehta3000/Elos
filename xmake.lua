@@ -38,5 +38,5 @@ target("Elos")
 	add_extrafiles("**.inl")
 	add_headerfiles("**.h", { install = true })
 
-	add_links("user32", "gdi32", "dwmapi", "shcore")
+	add_links("user32", "gdi32", "dwmapi", "shcore", "Comctl32")
 target_end()
