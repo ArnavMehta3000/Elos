@@ -16,20 +16,20 @@ namespace Elos
         concept Stringable = requires(T t) { std::format("{}", t); };
 
         template<typename T>
-        NODISCARD StringView GetTypeName() noexcept
+        NODISCARD inline StringView GetTypeName() noexcept
         {
             return typeid(T).name();
         }
 
         // Helper function to extract filename from full path
-        NODISCARD String GetFileName(StringView path) noexcept
+        NODISCARD inline String GetFileName(StringView path) noexcept
         {
             size_t lastSlash = path.find_last_of("\\/");
             return String(lastSlash != StringView::npos ? path.substr(lastSlash + 1) : path);
         }
 
         // Helper function to format stacktrace
-        NODISCARD String FormatStackTrace(const std::stacktrace& trace) noexcept
+        NODISCARD inline String FormatStackTrace(const std::stacktrace& trace) noexcept
         {
             // Skip topmost 2 frames since they are part of assert formatters
             constexpr size_t startFrame = 2;
@@ -38,10 +38,10 @@ namespace Elos
 
             // Remove the addresses
             const auto FormatDesc = [](const std::string& desc)
-            {
-                const size_t index = desc.find_last_of('+');
-                return desc.substr(0, index);
-            };
+                {
+                    const size_t index = desc.find_last_of('+');
+                    return desc.substr(0, index);
+                };
 
             // Format only the frames we want to keep
             String result;
@@ -60,7 +60,7 @@ namespace Elos
         }
 
         // Helper function to format common assertion info
-        NODISCARD String FormatAssertionLocation(const std::source_location& location) noexcept
+        NODISCARD inline String FormatAssertionLocation(const std::source_location& location) noexcept
         {
             return std::format(
                 "{}({})\n"
@@ -165,13 +165,6 @@ namespace Elos
         bool                 m_includeCallStack;
     };
 
-    // Helper function to deduce template parameters
-    template<typename Expr>
-    AssertBuilder<Expr> ASSERT(Expr&& expr, const std::source_location& location = std::source_location::current())
-    {
-        return AssertBuilder<Expr>(std::forward<Expr>(expr), location);
-    }
-
     template<typename T, typename U>
     class AssertEqualityBuilder
     {
@@ -263,12 +256,6 @@ namespace Elos
         String m_message;
         bool m_includeCallStack;
     };
-
-    template<typename T, typename U> requires Internal::Stringable<T>&& Internal::Stringable<U>
-    AssertEqualityBuilder<T, U> ASSERT_EQ(const T& actual, const U& expected, const std::source_location& location = std::source_location::current())
-    {
-        return AssertEqualityBuilder<T, U>(actual, expected, location);
-    }
 
     template<std::floating_point T, std::floating_point U>
     class AssertNearBuilder
@@ -374,6 +361,19 @@ namespace Elos
         return AssertNearBuilder<T, U>(actual, expected, epsilon, location);
     }
 
+
+    template<typename Expr>
+    auto ASSERT(Expr&& expr, const std::source_location& location = std::source_location::current())
+    {
+        return AssertBuilder<Expr>(std::forward<Expr>(expr), location);
+    }
+
+    template<typename T, typename U> requires Internal::Stringable<T>&& Internal::Stringable<U>
+    auto ASSERT_EQ(const T& actual, const U& expected, const std::source_location& location = std::source_location::current())
+    {
+        return AssertEqualityBuilder<T, U>(actual, expected, location);
+    }
+
     template<typename Container>
     auto ASSERT_EMPTY(const Container& container)
     {
@@ -382,14 +382,14 @@ namespace Elos
     }
 
     template<typename T>
-    auto ASSERT_NOT_NULL(const T* ptr) 
+    auto ASSERT_NOT_NULL(const T* ptr)
     {
         return ASSERT(ptr != nullptr)
             .Msg("Expected non-null pointer of type: {}", Internal::GetTypeName<T>());
     }
 
     template<typename T, typename U, typename V>
-    auto ASSERT_IN_RANGE(const T& value, const U& min, const V& max) 
+    auto ASSERT_IN_RANGE(const T& value, const U& min, const V& max)
     {
         return ASSERT(value >= min && value <= max)
             .Msg("Value {} expected to be in range [{}, {}]", value, min, max);
