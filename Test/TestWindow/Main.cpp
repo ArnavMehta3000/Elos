@@ -7,21 +7,40 @@
 
 int main()
 {
-	Elos::Window window("Test Window", { 1280, 720 }, Elos::WindowStyle::Default);
+	Elos::Window mainWindow(Elos::WindowCreateInfo{
+		.Title = "Game Editor",
+		.Size = {1280, 720}
+	});
+
+	Elos::Window* const gameView = mainWindow.CreateChild({
+		.Title = "Game View",
+		.Size = {640, 480},
+		.ChildMode = Elos::WindowChildMode::Embedded
+	});
+
+	// Create a modal settings window
+	Elos::Window* const settingsWindow = mainWindow.CreateChild({
+		.Title = "Settings",
+		.Size = {400, 300},
+		.ChildMode = Elos::WindowChildMode::Modal
+	});
+
+
+
 	bool isDarkTheme = false;
 	bool hasRoundCorners = true;
 	bool isTransparent = true;
 
-	const auto OnTextInput = [&window](const Elos::Event::TextInput& e)
+	const auto OnTextInput = [&mainWindow](const Elos::Event::TextInput& e)
 	{
 		std::println("Text Input: {}", e.AsChar());
 	};
 
-	const auto OnWindowClose = [&window](const Elos::Event::Closed&)
+	const auto OnWindowClose = [&mainWindow](const Elos::Event::Closed&)
 	{
 		const Elos::MessageBoxDesc desc
 		{
-			.Window = window.GetHandle(),
+			.Window = mainWindow.GetHandle(),
 			.Title = "Close Window Requested",
 			.Text = "Are you sure you want to close the window?",
 			.Flags = Elos::MessageBoxFlags{}
@@ -30,30 +49,30 @@ int main()
 		const Elos::MessageBoxReturnValue value = Elos::ShowMessageBox(desc);
 		if (value == Elos::MessageBoxReturnValue::Ok)
 		{
-			window.Close();
+			mainWindow.Close();
 		}
 	};
 
-	const auto OnKeyPressed = [&window, &isDarkTheme, &hasRoundCorners, &isTransparent](const Elos::Event::KeyPressed& e)
+	const auto OnKeyPressed = [&mainWindow, &isDarkTheme, &hasRoundCorners, &isTransparent](const Elos::Event::KeyPressed& e)
 	{
 		if (e.Key == Elos::KeyCode::Escape)
 		{
 			std::println("Escape Pressed. Closing...");
-			window.Close();
+			mainWindow.Close();
 		}
 		
 		if (e.Key == Elos::KeyCode::D)
 		{
 			isDarkTheme = !isDarkTheme;
 			std::println("Set window dark theme: {}", isDarkTheme);
-			Elos::WindowExtensions::EnableDarkMode(window.GetHandle(), isDarkTheme);
+			Elos::WindowExtensions::EnableDarkMode(mainWindow.GetHandle(), isDarkTheme);
 		}
 
 		if (e.Key == Elos::KeyCode::C)
 		{
 			hasRoundCorners = !hasRoundCorners;
 			std::println("Set window round corners: {}", hasRoundCorners);
-			Elos::WindowExtensions::RoundCorners(window.GetHandle(), hasRoundCorners ? 
+			Elos::WindowExtensions::RoundCorners(mainWindow.GetHandle(), hasRoundCorners ?
 				Elos::WindowExtensions::CornerPreference::Round : Elos::WindowExtensions::CornerPreference::DoNotRound);
 		}
 
@@ -61,25 +80,25 @@ int main()
 		{
 			isTransparent = !isTransparent;
 			std::println("Set window transparent: {}", isTransparent);
-			Elos::WindowExtensions::SetTransparency(window.GetHandle(), static_cast<Elos::byte>(isTransparent ? 128 : 255));
+			Elos::WindowExtensions::SetTransparency(mainWindow.GetHandle(), static_cast<Elos::byte>(isTransparent ? 128 : 255));
 		}
 	};
 
 
-	while (window.IsOpen())
+	while (mainWindow.IsOpen())
 	{
 #if USE_HANDLE_EVENT
-		window.HandleEvents(OnTextInput, OnWindowClose, OnKeyPressed);
+		mainWindow.HandleEvents(OnTextInput, OnWindowClose, OnKeyPressed);
 #else
 		while (const auto event = window.PollEvent())
 		{
 			if (event->Is<Elos::Event::Closed>())
 			{
-				window.Close();
+				mainWindow.Close();
 			}
 		
 			event->visit(
-				[&window](const auto& e)
+				[&mainWindow](const auto& e)
 				{
 					using T = std::decay_t<decltype(e)>;
 					if constexpr (std::is_same_v<T, Elos::Event::KeyReleased>)
@@ -87,7 +106,7 @@ int main()
 						if (e.Key == Elos::KeyCode::Escape)
 						{
 							std::println("Escape Pressed. Closing...");
-							window.Close();
+							mainWindow.Close();
 						}
 					}
 					else if constexpr (std::is_same_v<T, Elos::Event::TextInput>)

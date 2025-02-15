@@ -14,7 +14,8 @@
 #include <Windows.h>
 
 // Use common controls
-#pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+				processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 namespace Elos
 {
@@ -52,7 +53,7 @@ namespace Elos
 	{
 	public:
 		Window() = default;
-		Window(const String& title, const WindowSize& size, const WindowStyle& style = WindowStyle::Default);
+		Window(const WindowCreateInfo& info);
 		~Window();
 
 		Window(const Window&) = delete;
@@ -61,7 +62,7 @@ namespace Elos
 		Window(Window&& other) noexcept;
 		Window& operator=(Window&&other ) noexcept;
 
-		void Create(const String& title, const WindowSize& size, const WindowStyle& style = WindowStyle::Default);
+		NODISCARD Window* CreateChild(const WindowCreateInfo& createInfo);
 
 		NODISCARD bool IsOpen() const;
 		NODISCARD WindowPosition GetPosition() const;
@@ -73,7 +74,7 @@ namespace Elos
 		void SetSize(const WindowSize& size);
 		void SetMinimumSize(const WindowSize& size);
 		void SetTitle(const String& title) const;
-		void SetVisible(bool visible);
+		void SetVisible(bool visible) const;
 		void RequestFocus() const;
 		bool HasFocus() const;
 		
@@ -82,7 +83,13 @@ namespace Elos
 		template <typename... Handlers>
 		void HandleEvents(Handlers&&... handlers);
 
+		NODISCARD bool IsChild() const { return m_childMode != WindowChildMode::None; }
+		NODISCARD WindowChildMode GetChildMode() const { return m_childMode; }
+		NODISCARD Window* GetParent() const { return m_parent; }
+		NODISCARD const std::vector<Window>& GetChildren() const { return m_children; }
+
 	private:
+		void Create(const WindowCreateInfo& createInfo);
 		static void RegisterWindowClass();
 		static LRESULT CALLBACK GlobalOnEvent(HWND handle, UINT message, WPARAM wParam, LPARAM lParam);
 		
@@ -94,15 +101,22 @@ namespace Elos
 
 		WindowSize ContentSizeToWindowSize(const WindowSize& size) const;
 
-	private:
-		WindowHandle      m_handle{ nullptr };
-		WindowSize        m_size{ 0, 0 };
-		WindowSize        m_minimumSize{ 20, 20 };
-		std::queue<Event> m_events;
-		char16            m_surrogate{ 0 };
+		NODISCARD Window* AddChild(const WindowCreateInfo& createInfo);
+		void RemoveChild(Window* child);
+		NODISCARD DWORD GetWin32WindowStyle(WindowStyle style, WindowChildMode childMode) const;
+		void UpdateChildWindowStyles();
 
+	private:
+		WindowHandle              m_handle{ nullptr };
+		WindowSize                m_size{ 0, 0 };
+		WindowSize                m_minimumSize{ 20, 20 };
+		char16                    m_surrogate{ 0 };
+		WindowChildMode           m_childMode{ WindowChildMode::None };
 		std::unique_ptr<Keyboard> m_keyboard;
 		std::unique_ptr<Mouse>    m_mouse;
+		Window*                   m_parent{ nullptr };
+		std::queue<Event>         m_events;
+		std::vector<Window>       m_children;
 
 		static u32            s_windowCount;
 		static const wchar_t* s_className;

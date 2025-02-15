@@ -9,7 +9,7 @@ namespace Elos
 	u32 Window::s_windowCount = 0;
 	const wchar_t* Window::s_className = L"ElosWindowClass";
 
-	Window::Window(const String& title, const WindowSize& size, const WindowStyle& style)
+	Window::Window(const WindowCreateInfo& createInfo)
 	{
 		// Init common controls
 		if (s_windowCount == 0)
@@ -20,9 +20,10 @@ namespace Elos
 			InitCommonControlsEx(&icc);
 		}
 
+
 		m_keyboard = std::make_unique<Keyboard>(*this);
 		m_mouse = std::make_unique<Mouse>(*this);
-		Create(title, size, style);
+		Create(createInfo);
 	}
 	
 	Window::~Window()
@@ -32,17 +33,21 @@ namespace Elos
 		m_mouse.reset();
 	}
 	
-	Window::Window(Window&& other) noexcept
+	Window::Window(Window&& other) noexcept 
 		: m_handle(other.m_handle)
 		, m_size(other.m_size)
 		, m_minimumSize(other.m_minimumSize)
 		, m_events(std::move(other.m_events))
 		, m_keyboard(std::move(other.m_keyboard))
 		, m_mouse(std::move(other.m_mouse))
+		, m_childMode(other.m_childMode)
+		, m_parent(other.m_parent)
+		, m_children(std::move(other.m_children))
 	{
 		other.m_handle = nullptr;
 		other.m_keyboard.reset();
 		other.m_mouse.reset();
+		other.m_parent = nullptr;
 	}
 	
 	Window& Window::operator=(Window&& other) noexcept
@@ -51,22 +56,34 @@ namespace Elos
 		{
 			Close();
 
-			m_handle           = other.m_handle;
-			m_size             = other.m_size;
-			m_minimumSize      = other.m_minimumSize;
-			m_events           = std::move(other.m_events);
-			m_keyboard         = std::move(other.m_keyboard);
-			m_mouse            = std::move(other.m_mouse);
+			m_handle      = other.m_handle;
+			m_size        = other.m_size;
+			m_minimumSize = other.m_minimumSize;
+			m_events      = std::move(other.m_events);
+			m_keyboard    = std::move(other.m_keyboard);
+			m_mouse       = std::move(other.m_mouse);
+			m_childMode   = other.m_childMode;
+			m_parent      = other.m_parent;
+			m_children    = std::move(other.m_children);
 
 			other.m_handle = nullptr;
 			other.m_keyboard.reset();
 			other.m_mouse.reset();
+			other.m_parent = nullptr;
 		}
 
 		return *this;
 	}
 
-	void Window::Create(const String& title, const WindowSize& size, const WindowStyle& style)
+	Window* Window::CreateChild(const WindowCreateInfo& createInfo)
+	{
+		WindowCreateInfo childInfo = createInfo;
+		childInfo.Parent = this;
+
+		return AddChild(childInfo);
+	}
+
+	void Window::Create(const WindowCreateInfo& createInfo)
 	{
 		Close();
 
@@ -77,38 +94,47 @@ namespace Elos
 
 		SetDPIAwareness();
 
-		// Compute screen position
-		const HDC screenDC = ::GetDC(nullptr);
-		const i32 left     = ::GetDeviceCaps(screenDC, HORZRES) / 2 - static_cast<i32>(size.Width) / 2;
-		const i32 top      = ::GetDeviceCaps(screenDC, VERTRES) / 2 - static_cast<i32>(size.Height) / 2;
-		::ReleaseDC(nullptr, screenDC);
+		m_childMode = createInfo.ChildMode;
+		m_parent = createInfo.Parent;
 
-		// Compute window style
-		DWORD win32Style = WS_VISIBLE;
-		if (style == WindowStyle::None)
+		// Compute position
+		i32 x = createInfo.Position.X;
+		i32 y = createInfo.Position.Y;
+
+		if (x == CW_USEDEFAULT && y == CW_USEDEFAULT)
 		{
-			win32Style |= WS_POPUP;
-		}
-		else
-		{
-			if ((style & WindowStyle::Titlebar) == WindowStyle::Titlebar)
-				win32Style |= WS_CAPTION | WS_MINIMIZEBOX;
-			if ((style & WindowStyle::Resize) == WindowStyle::Resize)
-				win32Style |= WS_THICKFRAME | WS_MAXIMIZEBOX;
-			if ((style & WindowStyle::Close) == WindowStyle::Close)
-				win32Style |= WS_SYSMENU;
+			if (m_parent)
+			{
+				// Center in parent
+				const WindowSize& parentSize = m_parent->GetSize();
+				x = (parentSize.Width - createInfo.Size.Width) / 2;
+				y = (parentSize.Height - createInfo.Size.Height) / 2;
+			}
+			else
+			{
+				// Center on screen
+				const HDC screenDC = ::GetDC(nullptr);
+				x = ::GetDeviceCaps(screenDC, HORZRES) / 2 - static_cast<i32>(createInfo.Size.Width) / 2;
+				y = ::GetDeviceCaps(screenDC, VERTRES) / 2 - static_cast<i32>(createInfo.Size.Height) / 2;
+				::ReleaseDC(nullptr, screenDC);
+			}
 		}
 
-		const WindowSize& windowSize = ContentSizeToWindowSize(size);
+		DWORD win32Style = GetWin32WindowStyle(createInfo.Style, createInfo.ChildMode);
+		const WindowSize& windowSize = ContentSizeToWindowSize(createInfo.Size);
+
+		// Get parent handle if this is a child window
+		HWND parentHandle = m_parent ? m_parent->GetHandle() : nullptr;
 
 		m_handle = ::CreateWindowEx(
 			WS_EX_CLIENTEDGE,
 			s_className,
-			StringToWString(title).c_str(),
+			StringToWString(createInfo.Title).c_str(),
 			win32Style,
-			left, top,
+			x, y,
 			windowSize.Width, windowSize.Height,
-			nullptr, nullptr,
+			parentHandle,
+			nullptr,
 			::GetModuleHandle(nullptr),
 			this);
 
@@ -117,15 +143,26 @@ namespace Elos
 			return;
 		}
 
-		SetWindowLongPtrW(m_handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+		::SetWindowLongPtrW(m_handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
 		RegisterRawInputDevices();
 
-		::ShowWindow(m_handle, SW_SHOW);
-		::UpdateWindow(m_handle);
-		::SetForegroundWindow(m_handle);
-		::SetFocus(m_handle);
+		// Set initial visibility based on child mode
+		bool initiallyVisible = (m_childMode != WindowChildMode::Modal);
+		SetVisible(initiallyVisible);
 
-		SetVisible(true);
+		if (initiallyVisible)
+		{
+			::UpdateWindow(m_handle);
+
+			// Only set focus if we're not a child or we're a modal window
+			if (!m_parent || m_childMode == WindowChildMode::Modal)
+			{
+				::SetForegroundWindow(m_handle);
+				::SetFocus(m_handle);
+			}
+		}
+
+		m_size = createInfo.Size;
 		m_mouse->SetVisible(true);
 		m_keyboard->SetKeyRepeatEnabled(true);
 
@@ -156,6 +193,20 @@ namespace Elos
 	
 	void Window::Close()
 	{
+		// Close all child windows first
+		for (auto& child : m_children)
+		{
+			child.Close();
+		}
+		m_children.clear();
+
+		// Remove ourselves from parent's children list
+		if (m_parent)
+		{
+			m_parent->RemoveChild(this);
+			m_parent = nullptr;
+		}
+
 		if (m_handle)
 		{
 			::DestroyWindow(m_handle);
@@ -192,7 +243,7 @@ namespace Elos
 		::SetWindowTextW(m_handle, StringToWString(title).c_str());
 	}
 	
-	void Window::SetVisible(bool visible)
+	void Window::SetVisible(bool visible) const
 	{
 		::ShowWindow(m_handle, visible ? SW_SHOW : SW_HIDE);
 	}
@@ -216,6 +267,16 @@ namespace Elos
 			
 	std::optional<Event> Window::PollEvent()
 	{
+		//// If we have a modal child window, only process its events
+		//auto modalChild = std::find_if(m_children.begin(), m_children.end(),
+		//	[](const auto& child) { return child.GetChildMode() == WindowChildMode::Modal; });
+
+		//if (modalChild != m_children.end())
+		//{
+		//	return (*modalChild).PollEvent();
+		//}
+		
+
 		PumpMessages();
 
 		if (!m_events.empty())
@@ -611,5 +672,70 @@ namespace Elos
 		RECT rectangle = { 0, 0, static_cast<LONG>(size.Width), static_cast<LONG>(size.Height) };
 		::AdjustWindowRect(&rectangle, static_cast<DWORD>(GetWindowLongPtr(m_handle, GWL_STYLE)), false);
 		return { static_cast<u32>(rectangle.right - rectangle.left), static_cast<u32>(rectangle.bottom - rectangle.top) };
+	}
+	
+	Window* Window::AddChild(const WindowCreateInfo& createInfo)
+	{
+		m_children.emplace_back(Window(createInfo));
+
+		return &m_children.back();
+	}
+	
+	void Window::RemoveChild(Window* child)
+	{
+		auto it = std::find_if(m_children.begin(), m_children.end(),
+			[child](const Window& window) { return &window == child; });
+
+		if (it != m_children.end())
+		{
+			m_children.erase(it);
+		}
+	}
+	
+	DWORD Window::GetWin32WindowStyle(WindowStyle style, WindowChildMode childMode) const
+	{
+		DWORD win32Style = 0;
+
+		switch (childMode)
+		{
+		case WindowChildMode::None:
+			win32Style = WS_VISIBLE;
+			if (style == WindowStyle::None)
+			{
+				win32Style |= WS_POPUP;
+			}
+			else
+			{
+				if ((style & WindowStyle::Titlebar) == WindowStyle::Titlebar)
+					win32Style |= WS_CAPTION | WS_MINIMIZEBOX;
+				if ((style & WindowStyle::Resize) == WindowStyle::Resize)
+					win32Style |= WS_THICKFRAME | WS_MAXIMIZEBOX;
+				if ((style & WindowStyle::Close) == WindowStyle::Close)
+					win32Style |= WS_SYSMENU;
+			}
+			break;
+
+		case WindowChildMode::Embedded:
+			win32Style = WS_CHILD | WS_VISIBLE;
+			break;
+
+		case WindowChildMode::Modal:
+			win32Style = WS_POPUP | WS_CAPTION | WS_SYSMENU;
+			if ((style & WindowStyle::Resize) == WindowStyle::Resize)
+				win32Style |= WS_THICKFRAME | WS_MAXIMIZEBOX;
+			break;
+
+		case WindowChildMode::Popup:
+			win32Style = WS_POPUP | WS_CAPTION | WS_SYSMENU;
+			if ((style & WindowStyle::Resize) == WindowStyle::Resize)
+				win32Style |= WS_THICKFRAME;
+			break;
+		}
+
+		return win32Style;
+	}
+	
+	void Window::UpdateChildWindowStyles()
+	{
 	}
 }
