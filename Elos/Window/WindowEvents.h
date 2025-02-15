@@ -12,6 +12,7 @@ namespace Elos
 	class Event
 	{
 	public:
+		struct Created{};
 		struct Closed{};
 		struct FocusLost{};
 		struct FocusGained{};

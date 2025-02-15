@@ -1,6 +1,7 @@
 #pragma once
 #include <Elos/Common/StandardTypes.h>
 #include <Elos/Common/EnumFlags.h>
+#include <memory>
 
 namespace Elos
 {
@@ -39,9 +40,46 @@ namespace Elos
 	{
 		String Title;
 		WindowSize Size;
-		WindowStyle Style         = WindowStyle::Default;
-		WindowChildMode ChildMode = WindowChildMode::None;
-		WindowPosition Position   = { static_cast<i32>(0x80000000), static_cast<i32>(0x80000000) };  // Same values as CW_USEDEFAULT
-		Window* Parent            = nullptr;
+		WindowStyle Style{ WindowStyle::Default };
+		WindowChildMode ChildMode{ WindowChildMode::None };
+		WindowPosition Position{ static_cast<i32>(0x80000000), static_cast<i32>(0x80000000) };  // Same values as CW_USEDEFAULT
+		std::shared_ptr<Window> Parent{ nullptr };
+
+		// Default window create info (non-child, main window)
+		static WindowCreateInfo Default(const String& title, const WindowSize& size, WindowStyle style = WindowStyle::Default)
+		{
+			return WindowCreateInfo
+			{
+				.Title     = title,
+				.Size      = size,
+				.Style     = style,
+				.ChildMode = WindowChildMode::None,
+				.Parent    = nullptr
+			};
+		}
+
+		static WindowCreateInfo ChildModal(const std::shared_ptr<Window>& parent, const String& title, const WindowSize& size, WindowStyle style = WindowStyle::Default)
+		{
+			return WindowCreateInfo
+			{
+				.Title     = title,
+				.Size      = size,
+				.Style     = style,
+				.ChildMode = WindowChildMode::Modal,
+				.Parent    = parent
+			};
+		}
+
+		static WindowCreateInfo ChildEmbedded(const std::shared_ptr<Window>& parent, const String& title, const WindowSize& size, WindowStyle style = WindowStyle::Default)
+		{
+			return WindowCreateInfo
+			{
+				.Title     = title,
+				.Size      = size,
+				.Style     = style,
+				.ChildMode = WindowChildMode::Embedded,
+				.Parent    = parent
+			};
+		}
 	};
 }
