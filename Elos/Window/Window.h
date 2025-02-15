@@ -8,11 +8,13 @@
 #include <Elos/Window/Event.h>
 #include <Elos/Window/Input/Keyboard.h>
 #include <Elos/Window/Input/Mouse.h>
-#include <Elos/Window/UI/Widget.h>
 #include <optional>
 #include <queue>
 #include <memory>
 #include <Windows.h>
+
+// Use common controls
+#pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 namespace Elos
 {
@@ -74,15 +76,11 @@ namespace Elos
 		void SetVisible(bool visible);
 		void RequestFocus() const;
 		bool HasFocus() const;
-		void SetWindowDarkTheme(bool isDarkTheme) const;
 		
 		std::optional<Event> PollEvent();
 
 		template <typename... Handlers>
 		void HandleEvents(Handlers&&... handlers);
-
-		void SetWidget(std::unique_ptr<Widget> widget);
-		NODISCARD Widget* GetRootWidget() const { return m_widget.get(); }
 
 	private:
 		static void RegisterWindowClass();
@@ -105,7 +103,6 @@ namespace Elos
 
 		std::unique_ptr<Keyboard> m_keyboard;
 		std::unique_ptr<Mouse>    m_mouse;
-		std::unique_ptr<Widget>   m_widget;
 
 		static u32            s_windowCount;
 		static const wchar_t* s_className;

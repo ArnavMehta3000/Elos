@@ -1,7 +1,6 @@
 #include <Elos/Window/Window.h>
 #include <Elos/Window/Utils/MessageBox.h>
-#include <Elos/Window/UI/Widgets/Button.h>
-#include <Elos/Window/UI/Widgets/Container.h>
+#include <Elos/Window/Utils/WindowExtensions.h>
 #include <print>
 
 #define USE_HANDLE_EVENT 1
@@ -10,34 +9,8 @@ int main()
 {
 	Elos::Window window("Test Window", { 1280, 720 }, Elos::WindowStyle::Default);
 	bool isDarkTheme = false;
-
-	// Create a vertical container
-	auto container = Elos::CreateWidget<Elos::Container>(Elos::Container::Direction::Vertical, 10);
-
-	// Create buttons with explicit sizes
-	auto button1 = Elos::CreateWidget<Elos::Button>("Button 1");
-	button1->SetSize({ 200, 40 });  // Set explicit size for button
-	button1->SetOnClickCallback([]() {
-		std::println("Button 1 clicked!");
-		});
-
-	auto button2 = Elos::CreateWidget<Elos::Button>("Button 2");
-	button2->SetSize({ 200, 40 });  // Set explicit size for button
-	button2->SetOnClickCallback([]() {
-		std::println("Button 2 clicked!");
-		});
-
-	// Add buttons to container
-	container->AddChild(std::move(button1));
-	container->AddChild(std::move(button2));
-
-	// Set container position to be slightly inset from window edges
-	container->SetPosition({ 20, 20 });  // 20 pixels from left and top edges
-
-	// Set container size to match window client area minus margins
-	container->SetSize({ 1240, 680 });  // window size minus margins
-
-	window.SetWidget(std::move(container));
+	bool hasRoundCorners = true;
+	bool isTransparent = true;
 
 	const auto OnTextInput = [&window](const Elos::Event::TextInput& e)
 	{
@@ -61,24 +34,42 @@ int main()
 		}
 	};
 
-	const auto OnEscapePressed = [&window, &isDarkTheme](const Elos::Event::KeyPressed& e)
+	const auto OnKeyPressed = [&window, &isDarkTheme, &hasRoundCorners, &isTransparent](const Elos::Event::KeyPressed& e)
 	{
 		if (e.Key == Elos::KeyCode::Escape)
 		{
 			std::println("Escape Pressed. Closing...");
 			window.Close();
 		}
-		if (e.Key == Elos::KeyCode::T)
+		
+		if (e.Key == Elos::KeyCode::D)
 		{
 			isDarkTheme = !isDarkTheme;
-			window.SetWindowDarkTheme(isDarkTheme);
+			std::println("Set window dark theme: {}", isDarkTheme);
+			Elos::WindowExtensions::EnableDarkMode(window.GetHandle(), isDarkTheme);
+		}
+
+		if (e.Key == Elos::KeyCode::C)
+		{
+			hasRoundCorners = !hasRoundCorners;
+			std::println("Set window round corners: {}", hasRoundCorners);
+			Elos::WindowExtensions::RoundCorners(window.GetHandle(), hasRoundCorners ? 
+				Elos::WindowExtensions::CornerPreference::Round : Elos::WindowExtensions::CornerPreference::DoNotRound);
+		}
+
+		if (e.Key == Elos::KeyCode::P)
+		{
+			isTransparent = !isTransparent;
+			std::println("Set window transparent: {}", isTransparent);
+			Elos::WindowExtensions::SetTransparency(window.GetHandle(), static_cast<Elos::byte>(isTransparent ? 128 : 255));
 		}
 	};
+
 
 	while (window.IsOpen())
 	{
 #if USE_HANDLE_EVENT
-		window.HandleEvents(OnTextInput, OnWindowClose, OnEscapePressed);
+		window.HandleEvents(OnTextInput, OnWindowClose, OnKeyPressed);
 #else
 		while (const auto event = window.PollEvent())
 		{

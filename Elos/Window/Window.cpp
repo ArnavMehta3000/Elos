@@ -1,11 +1,7 @@
 #include <Elos/Window/Window.h>
 #include <Elos/Common/String.h>
-#include <dwmapi.h>
 #include <shellscalingapi.h>
-
-#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
-#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
-#endif
+#include <CommCtrl.h>
 
 namespace Elos
 {	
@@ -14,6 +10,16 @@ namespace Elos
 
 	Window::Window(const String& title, const WindowSize& size, const WindowStyle& style)
 	{
+		// Init common controls
+		if (s_windowCount == 0)
+		{
+			INITCOMMONCONTROLSEX icc = {};
+			icc.dwSize = sizeof(INITCOMMONCONTROLSEX);
+			icc.dwICC = ICC_STANDARD_CLASSES | ICC_WIN95_CLASSES;
+			bool result = InitCommonControlsEx(&icc);
+			int x = 0;
+		}
+
 		m_keyboard = std::make_unique<Keyboard>(*this);
 		m_mouse = std::make_unique<Mouse>(*this);
 		Create(title, size, style);
@@ -207,17 +213,7 @@ namespace Elos
 	{
 		return m_handle == ::GetForegroundWindow();
 	}
-
-	void Window::SetWindowDarkTheme(bool isDarkTheme) const
-	{
-		BOOL isDarkMode = isDarkTheme;
-
-		::DwmSetWindowAttribute(m_handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &isDarkMode, sizeof(isDarkMode));
-
-		// Force a redraw to apply the new theme
-		::SetWindowPos(m_handle, nullptr, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
-	}
-		
+			
 	std::optional<Event> Window::PollEvent()
 	{
 		ProcessEvents();
@@ -232,26 +228,6 @@ namespace Elos
 		return std::nullopt;
 	}
 
-	void Window::SetWidget(std::unique_ptr<Widget> widget)
-	{
-		if (m_widget)
-		{
-			m_widget->Destroy();
-		}
-
-		m_widget = std::move(widget);
-
-		if (m_widget)
-		{
-			m_widget->Create(*this);
-			// Set initial size to match window's client area
-			m_widget->SetSize(GetSize());
-			m_widget->Layout();
-
-			::UpdateWindow(GetHandle());
-		}
-	}
-	
 	void Window::RegisterWindowClass()
 	{
 		WNDCLASSW windowClass     = { 0 };
@@ -331,13 +307,6 @@ namespace Elos
 				if (m_size.Width != width || m_size.Height != height)
 				{
 					m_size = { width, height };
-
-					// Update root widget size
-					if (m_widget)
-					{
-						m_widget->SetSize({ width, height });
-					}
-
 					PushEvent(Event::Resized{ width, height });
 				}
 			}

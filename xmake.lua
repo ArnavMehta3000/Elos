@@ -39,4 +39,5 @@ target("Elos")
 	add_headerfiles("**.h", { install = true })
 
 	add_links("user32", "gdi32", "dwmapi", "shcore", "Comctl32")
+	--add_ldflags("/manifest", "/manifestuac:\"level='asInvoker' uiAccess='false'\"", {force = true})
 target_end()
