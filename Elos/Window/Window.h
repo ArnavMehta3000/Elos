@@ -3,14 +3,14 @@
 #include <Elos/Export.h>
 #include <Elos/Common/FunctionMacros.h>
 #include <Elos/Common/String.h>
-#include <Elos/Window/WindowHandle.h>
-#include <Elos/Window/WindowTypes.h>
-#include <Elos/Window/Event.h>
 #include <Elos/Window/Input/Keyboard.h>
 #include <Elos/Window/Input/Mouse.h>
+#include <Elos/Window/WindowEvents.h>
+#include <Elos/Window/WindowHandle.h>
+#include <Elos/Window/WindowTypes.h>
+#include <memory>
 #include <optional>
 #include <queue>
-#include <memory>
 #include <Windows.h>
 
 // Use common controls
