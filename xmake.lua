@@ -15,12 +15,13 @@ set_runtimes(is_mode("debug") and "MDd" or "MD")
 
 if is_mode("debug") then
 	set_policy("preprocessor.linemarkers", true)  -- Enable preprocessor markers in debug mode
-	add_defines("ELOS_BUILD_DEBUG")
+	add_defines("ELOS_BUILD_DEBUG=1")
 	set_symbols("debug", "edit")  -- Enable hot reloading
 end
 
 if is_mode("release") then
 	set_symbols("hidden")
+	add_defines("ELOS_BUILD_DEBUG=0")
 	set_strip("all")
 end
 
