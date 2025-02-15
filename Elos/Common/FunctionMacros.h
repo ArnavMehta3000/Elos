@@ -6,3 +6,4 @@
 #define NODISCARD [[nodiscard]]
 #define LIKELY [[likely]]
 #define UNLIKELY [[unlikely]]
+#define FALLTHROUGH [[fallthrough]]
