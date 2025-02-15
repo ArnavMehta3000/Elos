@@ -1,6 +1,6 @@
 #include <Elos/Window/Window.h>
 
-#include <Elos/Common/String.h>
+#include <Elos/Common/Assert.h>
 #include <shellscalingapi.h>
 #include <CommCtrl.h>
 
@@ -266,6 +266,10 @@ namespace Elos
 		{
 			return 0;
 		}
+
+#if ELOS_BUILD_DEBUG
+		ASSERT_NOT_NULL(handle).Throw();
+#endif
 
 		return handle ? ::DefWindowProc(handle, message, wParam, lParam) : 0;
 	}
