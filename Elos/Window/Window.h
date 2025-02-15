@@ -88,9 +88,9 @@ namespace Elos
 		
 		void RegisterRawInputDevices() const;
 		void SetDPIAwareness() const;
-		void ProcessEvent(UINT msg, WPARAM wParam, LPARAM lParam);
+		NODISCARD LRESULT ProcessEvent(UINT msg, WPARAM wParam, LPARAM lParam);
 		void PushEvent(const Event& event);
-		void ProcessEvents();
+		void PumpMessages();
 
 		WindowSize ContentSizeToWindowSize(const WindowSize& size) const;
 

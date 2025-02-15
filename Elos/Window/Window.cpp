@@ -1,4 +1,5 @@
 #include <Elos/Window/Window.h>
+
 #include <Elos/Common/String.h>
 #include <shellscalingapi.h>
 #include <CommCtrl.h>
@@ -16,8 +17,7 @@ namespace Elos
 			INITCOMMONCONTROLSEX icc = {};
 			icc.dwSize = sizeof(INITCOMMONCONTROLSEX);
 			icc.dwICC = ICC_STANDARD_CLASSES | ICC_WIN95_CLASSES;
-			bool result = InitCommonControlsEx(&icc);
-			int x = 0;
+			InitCommonControlsEx(&icc);
 		}
 
 		m_keyboard = std::make_unique<Keyboard>(*this);
@@ -216,7 +216,7 @@ namespace Elos
 			
 	std::optional<Event> Window::PollEvent()
 	{
-		ProcessEvents();
+		PumpMessages();
 
 		if (!m_events.empty())
 		{
@@ -250,7 +250,10 @@ namespace Elos
 
 		if (window)
 		{
-			window->ProcessEvent(message, wParam, lParam);
+			if (LRESULT result = window->ProcessEvent(message, wParam, lParam))
+			{
+				return result;  // Event has been handled by window
+			}
 		}
 
 		if (message == WM_CLOSE)
@@ -264,7 +267,7 @@ namespace Elos
 			return 0;
 		}
 
-		return ::DefWindowProc(handle, message, wParam, lParam);
+		return handle ? ::DefWindowProc(handle, message, wParam, lParam) : 0;
 	}
 	
 	void Window::RegisterRawInputDevices() const
@@ -283,15 +286,20 @@ namespace Elos
 		SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 	}
 
-	void Window::ProcessEvent(UINT msg, WPARAM wParam, LPARAM lParam)
+	LRESULT Window::ProcessEvent(UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 		if (!m_handle)
 		{
-			return;
+			return 0;
 		}
 
 		switch (msg)
 		{
+		case WM_ERASEBKGND:
+		{
+			// Notify the OS that we don't want to erase the background to prevent flicker
+			return 1;
+		}
 		case WM_CLOSE:
 		{
 			PushEvent(Event::Closed{});
@@ -362,7 +370,7 @@ namespace Elos
 			break;
 		}
 
-		case WM_KEYDOWN:
+		case WM_KEYDOWN: 
 		case WM_SYSKEYDOWN:
 		{
 			if (m_keyboard->IsKeyRepeatEnabled() || ((HIWORD(lParam) & KF_REPEAT) == 0))
@@ -378,7 +386,7 @@ namespace Elos
 			break;
 		}
 
-		case WM_KEYUP:
+		case WM_KEYUP: 
 		case WM_SYSKEYUP:
 		{
 			if (m_keyboard->IsKeyRepeatEnabled() || ((HIWORD(lParam) & KF_REPEAT) == 0))
@@ -391,7 +399,6 @@ namespace Elos
 				event.System  = HIWORD(GetKeyState(VK_LWIN)) || HIWORD(GetKeyState(VK_RWIN));
 				PushEvent(event);
 			}
-			break;
 			break;
 		}
 
@@ -441,6 +448,7 @@ namespace Elos
 				});
 			break;
 		}
+		
 		case WM_LBUTTONUP:
 		{
 			PushEvent(Event::MouseButtonReleased{
@@ -450,6 +458,7 @@ namespace Elos
 				});
 			break;
 		}
+		
 		case WM_RBUTTONDOWN:
 		{
 			PushEvent(Event::MouseButtonPressed{
@@ -459,6 +468,7 @@ namespace Elos
 				});
 			break;
 		}
+		
 		case WM_RBUTTONUP:
 		{
 			PushEvent(Event::MouseButtonReleased{
@@ -468,6 +478,7 @@ namespace Elos
 				});
 			break;
 		}
+
 		case WM_MBUTTONDOWN:
 		{
 			PushEvent(Event::MouseButtonPressed{
@@ -477,6 +488,7 @@ namespace Elos
 				});
 			break;
 		}
+		
 		case WM_MBUTTONUP:
 		{
 			PushEvent(Event::MouseButtonReleased{
@@ -486,6 +498,7 @@ namespace Elos
 				});
 			break;
 		}
+		
 		case WM_XBUTTONDOWN:
 		{
 			PushEvent(Event::MouseButtonPressed{
@@ -495,6 +508,7 @@ namespace Elos
 				});
 			break;
 		}
+		
 		case WM_XBUTTONUP:
 		{
 			PushEvent(Event::MouseButtonReleased{
@@ -546,6 +560,7 @@ namespace Elos
 			PushEvent(Event::MouseMoved{ x, y });
 			break;
 		}
+		
 		case WM_INPUT:
 		{
 			RAWINPUT input;
@@ -568,6 +583,8 @@ namespace Elos
 			lpMMI->ptMinTrackSize.y = m_minimumSize.Height;
 		}
 		}
+
+		return 0;
 	}
 	
 	void Window::PushEvent(const Event& event)
@@ -575,7 +592,7 @@ namespace Elos
 		m_events.push(event);
 	}
 	
-	void Window::ProcessEvents()
+	void Window::PumpMessages()
 	{
 		MSG msg{};
 		while (::PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
