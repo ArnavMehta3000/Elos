@@ -12,7 +12,7 @@ set_policy("build.warning", true)
 set_warnings("all", "extra")
 set_policy("run.autobuild", true)
 set_allowedarchs("windows|x64")
-set_runtimes(is_mode("debug") and "MDd" or "MD")
+--set_runtimes(is_mode("debug") and "MDd" or "MD")
 
 if is_mode("debug") then
 	set_policy("preprocessor.linemarkers", true)  -- Enable preprocessor markers in debug mode
