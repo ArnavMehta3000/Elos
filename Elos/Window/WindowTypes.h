@@ -58,6 +58,7 @@ namespace Elos
 			};
 		}
 
+		// Modal child window
 		static WindowCreateInfo ChildModal(const std::shared_ptr<Window>& parent, const String& title, const WindowSize& size, WindowStyle style = WindowStyle::Default)
 		{
 			return WindowCreateInfo
@@ -70,6 +71,7 @@ namespace Elos
 			};
 		}
 
+		// Window that is embedded in parent window
 		static WindowCreateInfo ChildEmbedded(const std::shared_ptr<Window>& parent, const String& title, const WindowSize& size, WindowStyle style = WindowStyle::Default)
 		{
 			return WindowCreateInfo

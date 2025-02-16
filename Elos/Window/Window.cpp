@@ -125,6 +125,14 @@ namespace Elos
 			::SetFocus(m_handle);
 		}
 
+		// Calculate initial relative positions
+		if (m_childMode == WindowChildMode::Embedded && parent)
+		{
+			const WindowSize& parentSize  = parent->GetSize();
+			m_relativeRect.RelativeWidth  = static_cast<f32>(createInfo.Size.Width) / parentSize.Width;
+			m_relativeRect.RelativeHeight = static_cast<f32>(createInfo.Size.Height) / parentSize.Height;
+		}
+
 		m_size = windowSize;
 		m_mouse->SetVisible(true);
 		m_keyboard->SetKeyRepeatEnabled(true);
@@ -231,7 +239,7 @@ namespace Elos
 	{
 		return m_handle == ::GetForegroundWindow();
 	}
-			
+
 	std::optional<Event> Window::PollEvent()
 	{
 		PumpMessages();
@@ -334,8 +342,48 @@ namespace Elos
 		case WM_ERASEBKGND:
 		{
 			// Notify the OS that we don't want to erase the background to prevent flicker
-			return 1;
+			HDC hdc = (HDC)wParam;
+			RECT rect;
+			::GetClientRect(m_handle, &rect);
+
+			// Create and select a brush with the background color
+			HBRUSH brush = ::CreateSolidBrush(m_backgroundColor);
+			HBRUSH oldBrush = (HBRUSH)::SelectObject(hdc, brush);
+
+			// Fill the entire client area
+			::FillRect(hdc, &rect, brush);
+
+			// Clean up
+			::SelectObject(hdc, oldBrush);
+			::DeleteObject(brush);
+
+			return TRUE;
 		}
+
+		case WM_PAINT:
+		{
+			PAINTSTRUCT ps;
+			HDC hdc = ::BeginPaint(m_handle, &ps);
+
+			// Get client area
+			RECT rect;
+			::GetClientRect(m_handle, &rect);
+
+			// Create and select a brush with the background color
+			HBRUSH brush = ::CreateSolidBrush(m_backgroundColor);
+			HBRUSH oldBrush = (HBRUSH)::SelectObject(hdc, brush);
+
+			// Fill the entire client area
+			::FillRect(hdc, &ps.rcPaint, brush);
+
+			// Clean up
+			::SelectObject(hdc, oldBrush);
+			::DeleteObject(brush);
+
+			::EndPaint(m_handle, &ps);
+			return 0;
+		}
+
 		case WM_CLOSE:
 		{
 			PushEvent(Event::Closed{});
@@ -348,11 +396,57 @@ namespace Elos
 			{
 				const u32 width = static_cast<u32>(LOWORD(lParam));
 				const u32 height = static_cast<u32>(HIWORD(lParam));
+
 				if (m_size.Width != width || m_size.Height != height)
 				{
 					m_size = { width, height };
+
+					// Update embedded children
+					for (auto& child : m_children)
+					{
+						if (child && child->GetChildMode() == WindowChildMode::Embedded)
+						{
+							const auto& rel = child->m_relativeRect;
+							const WindowSize newSize
+							{
+								static_cast<u32>(width * rel.RelativeWidth),
+								static_cast<u32>(height * rel.RelativeHeight)
+							};
+
+							child->SetSize(newSize);
+						}
+					}
+
 					PushEvent(Event::Resized{ width, height });
 				}
+			}
+			break;
+		}
+
+		case WM_SIZING:
+		{
+			if (m_childMode == WindowChildMode::Embedded)
+			{
+				RECT* rect = reinterpret_cast<RECT*>(lParam);
+				if (auto parent = m_parent.lock())
+				{
+					// Get parent client area
+					RECT parentRect;
+					::GetClientRect(parent->GetHandle(), &parentRect);
+					::MapWindowPoints(parent->GetHandle(), HWND_DESKTOP, reinterpret_cast<POINT*>(&parentRect), 2);
+
+					// Constrain size to parent window
+					if (rect->right > parentRect.right)
+						rect->right = parentRect.right;
+					if (rect->bottom > parentRect.bottom)
+						rect->bottom = parentRect.bottom;
+
+					// Update relative sizes
+					const WindowSize& parentSize  = parent->GetSize();
+					m_relativeRect.RelativeWidth  = static_cast<f32>(rect->right - rect->left) / parentSize.Width;
+					m_relativeRect.RelativeHeight = static_cast<f32>(rect->bottom - rect->top) / parentSize.Height;
+				}
+				return 1;
 			}
 			break;
 		}
@@ -471,7 +565,6 @@ namespace Elos
 				position.x,
 				position.y
 				});
-
 			break;
 		}
 
@@ -557,8 +650,8 @@ namespace Elos
 
 		case WM_MOUSEMOVE:
 		{
-			const int x = static_cast<SHORT>(LOWORD(lParam));
-			const int y = static_cast<SHORT>(HIWORD(lParam));
+			const i32 x = static_cast<i32>(LOWORD(lParam));
+			const i32 y = static_cast<i32>(HIWORD(lParam));
 
 			// Get the client area of the window
 			RECT area;
@@ -637,6 +730,12 @@ namespace Elos
 			::DispatchMessageW(&msg);
 		}
 	}
+
+	void Window::Redraw() const
+	{
+		::InvalidateRect(m_handle, nullptr, TRUE);
+		::UpdateWindow(m_handle);
+	}
 	
 	WindowSize Window::ContentSizeToWindowSize(const WindowSize& size) const
 	{
@@ -683,7 +782,8 @@ namespace Elos
 			break;
 
 		case WindowChildMode::Embedded:
-			win32Style = WS_CHILD | WS_VISIBLE;
+			win32Style = WS_CHILD | WS_VISIBLE | WS_THICKFRAME | WS_CLIPCHILDREN;
+			win32Style &= ~(WS_BORDER | WS_DLGFRAME);  // Remove the default window border
 			break;
 
 		case WindowChildMode::Modal:

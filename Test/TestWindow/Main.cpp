@@ -16,6 +16,8 @@ int main()
 
 		auto gameView = mainWindow->CreateChild(
 			Elos::WindowCreateInfo::ChildEmbedded(mainWindow, "Game View", { 800, 600 }));
+		gameView->SetMinimumSize({ 100, 100 });
+		gameView->SetBackgroundColor(RGB(16, 18, 24));
 
 		bool isDarkTheme = false;
 		bool hasRoundCorners = true;
@@ -94,7 +96,12 @@ int main()
 						[](const Elos::Event::MouseButtonPressed& e)
 						{
 							std::println("Game view clicked at position: ({}, {})", e.X, e.Y);
-						});
+						},
+						[](const Elos::Event::Resized& e)
+						{
+							std::println("Game view resized to: ({}, {})", e.Size.Width, e.Size.Height);
+						}
+					);
 				}
 			}
 
@@ -115,7 +122,9 @@ int main()
 			}
 
 
-
+			if (mainWindow) mainWindow->Redraw();
+			if (gameView) gameView->Redraw();
+			if (settingsWindow) settingsWindow->Redraw();
 		}
 	}
 	catch (const std::exception& e)

@@ -74,6 +74,8 @@ namespace Elos
         void SetVisible(bool visible) const;
         void RequestFocus() const;
         bool HasFocus() const;
+        void SetBackgroundColor(COLORREF color) { m_backgroundColor = color; }
+        void Redraw() const;
 
         std::optional<Event> PollEvent();
 
@@ -114,6 +116,14 @@ namespace Elos
         std::queue<Event>                    m_events;
         std::vector<std::shared_ptr<Window>> m_children;
         mutable String                       m_title;
+        COLORREF                             m_backgroundColor = RGB(19, 22, 27);
+        
+        // For embedded windows - store position and size as percentages of parent
+        struct
+        {
+            f32 RelativeWidth{ 1.0f };  // Width as a percentage of the parent window
+			f32 RelativeHeight{ 1.0f }; // Height as a percentage of the parent window
+        } m_relativeRect;
 
         static u32 s_windowCount;
         static const wchar_t* s_className;
