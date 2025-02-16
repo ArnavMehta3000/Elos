@@ -36,7 +36,7 @@ target("Elos")
 	add_includedirs(".", { public = true })
 	add_files("**.cpp")
 
-	add_headerfiles("Elos/**.h", { install = true })
+	add_headerfiles("Elos/**.h", { install = false })
 	add_installfiles("(Elos/**.h)", { prefixdir = "include" })
 
 	add_links("user32", "gdi32", "dwmapi", "shcore", "Comctl32")
