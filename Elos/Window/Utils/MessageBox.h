@@ -6,7 +6,7 @@
 
 namespace Elos
 {
-	enum class MessagBoxButton : u32
+	enum class MessageBoxButton : u32
 	{
 		AbortRetryIgnore       = MB_ABORTRETRYIGNORE,
 		CancelTryAgainContinue = MB_CANCELTRYCONTINUE,
@@ -41,7 +41,7 @@ namespace Elos
 
 	struct MessageBoxFlags
 	{
-		MessagBoxButton Button{ MessagBoxButton::Ok };
+		MessageBoxButton Button{ MessageBoxButton::Ok };
 		MessageBoxIcon Icon{ MessageBoxIcon::Info };
 
 		constexpr u32 GetFlags() const
