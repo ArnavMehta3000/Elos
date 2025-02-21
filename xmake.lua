@@ -29,6 +29,9 @@ end
 add_defines("UNICODE", "_UNICODE", "NOMINMAX", "NOMCX", "NOSERVICE", "NOHELP", "WIN32_LEAN_AND_MEAN")
 add_tests("CompileSuccess", { build_should_pass = true, group = "Compilation" })
 
+add_requires("directxtk")
+add_packages("directxtk")
+
 target("Elos")
 	set_group("Elos")
 
