@@ -1,3 +1,5 @@
 .xmake
 vsxmake2022
 build
+.cache
+compile_commands.json
