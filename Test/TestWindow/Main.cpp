@@ -1,8 +1,82 @@
 #include <Elos/Window/Window.h>
 #include <Elos/Window/Utils/MessageBox.h>
 #include <Elos/Window/Utils/WindowExtensions.h>
+#include "DeviceResources.h"
+#include <DirectXColors.h>
+#include <d2d1_3helper.h>
+#include <SimpleMath.h>
+#include "GeometricPrimitive.h"
 #include <print>
+#include <thread>
 
+using namespace DirectX;
+using namespace DirectX::SimpleMath;
+using Microsoft::WRL::ComPtr;
+
+struct DXData
+{
+	std::unique_ptr<DX::DeviceResources> d3d;
+	std::unique_ptr<GeometricPrimitive>  shape;
+	ComPtr<IDXGISurface1>                dxgiSurface;
+	ComPtr<ID2D1RenderTarget>            d2dRenderTarget;
+	Matrix                               world;
+	Matrix                               view;
+	Matrix                               proj;
+};
+
+static void Create2DResources(DXData* dx, const Elos::Window& window)
+{
+	HRESULT hr{ S_OK };
+	hr = dx->d3d->GetSwapChain()->GetBuffer(0, IID_PPV_ARGS(&dx->dxgiSurface));
+
+	ComPtr<ID2D1Factory1> d2dFactory;
+	D2D1_FACTORY_OPTIONS opts{};
+	opts.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
+	hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory1), &opts, &d2dFactory);
+
+	float dpi = ::GetDpiForWindow(window.GetHandle());
+
+	D2D1_RENDER_TARGET_PROPERTIES props =
+		D2D1::RenderTargetProperties(
+			D2D1_RENDER_TARGET_TYPE_DEFAULT,
+			D2D1::PixelFormat(DXGI_FORMAT_UNKNOWN, D2D1_ALPHA_MODE_PREMULTIPLIED),
+			dpi, dpi);
+
+	hr = d2dFactory->CreateDxgiSurfaceRenderTarget(dx->dxgiSurface.Get(), &props, &dx->d2dRenderTarget);
+}
+
+static void InitD3D(DXData* dx, Elos::Window& window)
+{
+	dx->d3d = std::make_unique<DX::DeviceResources>(
+		DXGI_FORMAT_B8G8R8A8_UNORM,
+		DXGI_FORMAT_D32_FLOAT, 2,
+		D3D_FEATURE_LEVEL_11_1);
+	
+	dx->d3d->SetWindow(window.GetHandle(), window.GetSize().Width, window.GetSize().Height);
+	dx->d3d->CreateDeviceResources();
+	dx->d3d->CreateWindowSizeDependentResources();
+
+	dx->shape = GeometricPrimitive::CreateSphere(dx->d3d->GetD3DDeviceContext());
+	dx->world = Matrix::Identity;
+
+	auto size = dx->d3d->GetOutputSize();
+	dx->view = Matrix::CreateLookAt(Vector3(2.f, 2.f, 2.f),
+		Vector3::Zero, Vector3::UnitY);
+	dx->proj = Matrix::CreatePerspectiveFieldOfView(XM_PI / 4.f,
+		float(size.right) / float(size.bottom), 0.1f, 10.f);
+
+	Create2DResources(dx, window);
+}
+
+static void ResizeDX(DXData* dx, const Elos::Event::Resized &e)
+{
+	if (dx->d3d->WindowSizeChanged(static_cast<int>(e.Size.Width), static_cast<int>(e.Size.Height)))
+	{
+		auto size = dx->d3d->GetOutputSize();
+		dx->view = Matrix::CreateLookAt(Vector3(2.f, 2.f, 2.f), Vector3::Zero, Vector3::UnitY);
+		dx->proj = Matrix::CreatePerspectiveFieldOfView(XM_PI / 4.f, float(size.right) / float(size.bottom), 0.1f, 10.f);
+	}
+}
 
 int main()
 {
@@ -22,6 +96,10 @@ int main()
 		bool isDarkTheme = false;
 		bool hasRoundCorners = true;
 		bool isTransparent = true;
+		
+		DXData dx{};
+		InitD3D(&dx, *gameView);
+
 
 #pragma region Event Handlers
 		const auto OnTextInput = [&mainWindow](const Elos::Event::TextInput& e)
@@ -36,7 +114,7 @@ int main()
 					.Window = mainWindow->GetHandle(),
 					.Title = "Close Window Requested",
 					.Text = "Are you sure you want to close the window?",
-					.Flags = Elos::MessageBoxFlags{}
+					.Flags = Elos::MessageBoxFlags{.Button = Elos::MessageBoxButton::OkCancel}
 				};
 
 				const Elos::MessageBoxReturnValue value = Elos::ShowMessageBox(desc);
@@ -76,12 +154,23 @@ int main()
 					Elos::WindowExtensions::SetTransparency(mainWindow->GetHandle(), static_cast<Elos::byte>(isTransparent ? 128 : 255));
 				}
 			};
+
+		const auto OnWindowResize = [&mainWindow, &gameView, &dx](const Elos::Event::Resized& e)
+		{
+				dx.d2dRenderTarget.Reset();
+				dx.dxgiSurface.Reset();
+
+				ResizeDX(&dx,e);
+				Create2DResources(&dx, *gameView);  // Should be same as InitD3D window
+		};
 #pragma endregion
 
 
+		float t = 0.0f;
+
 		while (mainWindow->IsOpen())
 		{
-			mainWindow->HandleEvents(OnTextInput, OnWindowClose, OnKeyPressed,
+			mainWindow->HandleEvents(OnTextInput, OnWindowClose, OnKeyPressed, OnWindowResize,
 				[](const Elos::Event::MouseButtonPressed& e)
 				{
 					std::println("Main Window clicked at position: ({}, {})", e.X, e.Y);
@@ -97,9 +186,10 @@ int main()
 						{
 							std::println("Game view clicked at position: ({}, {})", e.X, e.Y);
 						},
-						[](const Elos::Event::Resized& e)
+						[&OnWindowResize](const Elos::Event::Resized& e)
 						{
 							std::println("Game view resized to: ({}, {})", e.Size.Width, e.Size.Height);
+							OnWindowResize(e);
 						}
 					);
 				}
@@ -121,10 +211,58 @@ int main()
 				);
 			}
 
+			t += 0.001f;
+
+			auto context = dx.d3d->GetD3DDeviceContext();
+			auto renderTarget = dx.d3d->GetRenderTargetView();
+			auto depthStencil = dx.d3d->GetDepthStencilView();
+
+			context->ClearRenderTargetView(renderTarget, Colors::DarkSlateBlue);
+			context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+			context->OMSetRenderTargets(1, &renderTarget, depthStencil);
+
+			// Set the viewport.
+			auto viewport = dx.d3d->GetScreenViewport();
+			context->RSSetViewports(1, &viewport);
+
+			dx.shape->Draw(dx.world, dx.view, dx.proj);
+
+			HRESULT hr{ S_OK };
+			DXGI_SWAP_CHAIN_DESC desc;
+			hr = dx.d3d->GetSwapChain()->GetDesc(&desc);
+
+			if (SUCCEEDED(hr) && dx.d2dRenderTarget)
+			{
+				D2D1_SIZE_F targetSize = dx.d2dRenderTarget->GetSize();
+				ComPtr<ID2D1SolidColorBrush> brush;
+				D2D1_COLOR_F color{ 1.0f, 0.0f, 0.0f, 1.0f };
+				hr = dx.d2dRenderTarget->CreateSolidColorBrush(color, &brush);
+
+				dx.d2dRenderTarget->BeginDraw();
+
+				brush->SetTransform(D2D1::Matrix3x2F::Scale(targetSize));
+				D2D1_RECT_F rect = D2D1::RectF(
+					100.0f,
+					100.0f,
+					std::abs(std::sinf(t) * 500.0f),
+					std::abs(std::cosf(t) * 500.0f));
+
+				D2D1_ELLIPSE ellipse = D2D1::Ellipse({ 500.0f, 500.0f }, std::abs(std::sinf(t) * 500.0f), std::abs(std::sinf(t) * 500.0f));
+
+				dx.d2dRenderTarget->DrawRectangle(&rect, brush.Get(), 5.0f);
+				dx.d2dRenderTarget->DrawEllipse(ellipse, brush.Get(), 7.0f);
+
+				dx.d2dRenderTarget->EndDraw();
+			}
+
+
+			dx.d3d->Present();
 
 			if (mainWindow) mainWindow->Redraw();
 			if (gameView) gameView->Redraw();
 			if (settingsWindow) settingsWindow->Redraw();
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
 	}
 	catch (const std::exception& e)
