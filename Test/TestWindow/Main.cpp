@@ -34,7 +34,7 @@ static void Create2DResources(DXData* dx, const Elos::Window& window)
 	opts.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
 	hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory1), &opts, &d2dFactory);
 
-	float dpi = ::GetDpiForWindow(window.GetHandle());
+	float dpi = static_cast<float>(::GetDpiForWindow(window.GetHandle()));
 
 	D2D1_RENDER_TARGET_PROPERTIES props =
 		D2D1::RenderTargetProperties(

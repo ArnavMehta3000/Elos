@@ -13,6 +13,7 @@ namespace Elos
 	class ELOS_API Mouse
 	{
 		friend class Window;
+		friend class WindowThread;
 
 	public:
 		explicit Mouse(Window& window);

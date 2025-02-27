@@ -12,6 +12,7 @@ namespace Elos
 	class ELOS_API Keyboard
 	{
 		friend class Window;
+		friend class WindowThread;
 
 	public:
 		explicit Keyboard(Window& window);
