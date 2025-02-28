@@ -59,7 +59,7 @@ ELOS_DECLARE_INTERFACE(IRenderable,
 	{ t.IsVisible() } -> std::same_as<bool>;
 );
 
-class Sprite : public Elos::Interface<Sprite, IRenderable>, public Elos::Reflectable<Sprite>
+class Sprite : public Elos::Interface<IRenderable>, public Elos::Reflectable<Sprite>
 {
 public:
 	void Render(int val)

@@ -21,17 +21,17 @@ namespace Elos
 		requires ::Elos::IsInterface_v<Interface>;
 		requires std::is_base_of_v<Interface, T>;
 	};
-	
+
 	/*
 	* Base class for all interfaces
 	* Expects a concept with name Is<Interface> to already be defined otherwise
 	* derived classes will not compile and the verification will fail
 	* Always use `ELOS_VERIFY_INTERFACE(Interface, Type)` to ensure that a type implements an interface
 	*/
-	template <typename Derived, typename... Interfaces>
+	template <typename... Interfaces>
 	class Interface : public Interfaces...
 	{
-		static_assert((::Elos::IsInterface_v<Interfaces> && ...), 
+		static_assert((::Elos::IsInterface_v<Interfaces> && ...),
 			"All interfaces must be declared using ELOS_DECLARE_INTERFACE");
 	public:
 		using InterfaceTypes = std::tuple<Interfaces...>;

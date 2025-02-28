@@ -18,7 +18,7 @@ ELOS_DECLARE_INTERFACE(ISerializable,
 	{ t.Deserialize(std::declval<const std::string&>()) } -> std::same_as<bool>;
 );
 
-class GameObject : public Elos::Interface<GameObject, IRenderable, ISerializable>
+class GameObject : public Elos::Interface<IRenderable, ISerializable>
 {
 public:
 	void Render() {}
@@ -58,7 +58,7 @@ ELOS_DECLARE_INTERFACE(IResettable,
 );
 
 
-class SimpleCounter : public Elos::Interface<SimpleCounter, ICounter>
+class SimpleCounter : public Elos::Interface<ICounter>
 {
 public:
 	void Increment() { m_count++; }
@@ -67,7 +67,7 @@ private:
 	int m_count = 0;
 };
 
-class AdvancedCounter : public Elos::Interface<AdvancedCounter, ICounter, IResettable>
+class AdvancedCounter : public Elos::Interface<ICounter, IResettable>
 {
 public:
 	void Increment() { m_count++; }
@@ -83,12 +83,12 @@ ELOS_VERIFY_INTERFACE(ICounter, AdvancedCounter);
 ELOS_VERIFY_INTERFACE(IResettable, AdvancedCounter);
 
 // Helper to track destructor calls
-struct DestructorTracker 
+struct DestructorTracker
 {
 	static int s_destroyCount;
-	~DestructorTracker() 
-	{ 
-		s_destroyCount++; 
+	~DestructorTracker()
+	{
+		s_destroyCount++;
 	}
 };
 int DestructorTracker::s_destroyCount = 0;
@@ -99,7 +99,7 @@ class TrackedCounter : public SimpleCounter, public DestructorTracker {};
 int main()
 {
 	GameObject o;
-	
+
 	DoRender(o);
 	DoSerialize(o);
 
@@ -151,8 +151,8 @@ int main()
 
 		auto simple = Elos::MakeTagged<SimpleCounter, TestPtr::Pack>();
 		auto advanced = Elos::MakeTagged<AdvancedCounter, TestPtr::Pack>();
-		
-		simple.Dispatch<ICounter>([](auto& ptr) 
+
+		simple.Dispatch<ICounter>([](auto& ptr)
 		{
 			ptr->Increment();
 			assert(ptr->GetCount() == 1 && "Count should be 1");
@@ -186,11 +186,11 @@ int main()
 		TestPtr ptr1 = Elos::MakeTagged<SimpleCounter, TestPtr::Pack>();
 		auto ptr2 = ptr1;  // shared copy
 
-		ptr1.Dispatch<ICounter>([](auto& ptr) 
+		ptr1.Dispatch<ICounter>([](auto& ptr)
 		{
 			ptr->Increment();
 		});
-		
+
 		ptr2.Dispatch<ICounter>([](auto& ptr)
 		{
 			assert(ptr->GetCount() == 1 && "Count should be shared between pointers");
@@ -198,7 +198,7 @@ int main()
 
 		std::println("Shared pointer semantics tests passed!");
 	};
-		
+
 	const auto TestAutomaticCleanup = []()
 	{
 		std::println("Testing automatic cleanup");
