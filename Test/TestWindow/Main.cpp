@@ -1,3 +1,4 @@
+#include <Elos/Utils/Timer.h>
 #include <Elos/Window/Window.h>
 #include <Elos/Window/Utils/MessageBox.h>
 #include <Elos/Window/Utils/WindowExtensions.h>
@@ -6,6 +7,7 @@
 #include <d2d1_3helper.h>
 #include <SimpleMath.h>
 #include "GeometricPrimitive.h"
+#include <format>
 #include <print>
 #include <thread>
 
@@ -50,8 +52,9 @@ static void InitD3D(DXData* dx, Elos::Window& window)
 	dx->d3d = std::make_unique<DX::DeviceResources>(
 		DXGI_FORMAT_B8G8R8A8_UNORM,
 		DXGI_FORMAT_D32_FLOAT, 2,
-		D3D_FEATURE_LEVEL_11_1);
-	
+		D3D_FEATURE_LEVEL_11_1,
+		DX::DeviceResources::c_AllowTearing | DX::DeviceResources::c_FlipPresent);
+
 	dx->d3d->SetWindow(window.GetHandle(), window.GetSize().Width, window.GetSize().Height);
 	dx->d3d->CreateDeviceResources();
 	dx->d3d->CreateWindowSizeDependentResources();
@@ -68,7 +71,7 @@ static void InitD3D(DXData* dx, Elos::Window& window)
 	Create2DResources(dx, window);
 }
 
-static void ResizeDX(DXData* dx, const Elos::Event::Resized &e)
+static void ResizeDX(DXData* dx, const Elos::Event::Resized& e)
 {
 	if (dx->d3d->WindowSizeChanged(static_cast<int>(e.Size.Width), static_cast<int>(e.Size.Height)))
 	{
@@ -82,6 +85,8 @@ int main()
 {
 	try
 	{
+		Elos::Timer gameTimer;
+
 		auto mainWindow = std::make_shared<Elos::Window>(
 			Elos::WindowCreateInfo::Default("Main Window", { 1280, 720 }));
 
@@ -96,7 +101,7 @@ int main()
 		bool isDarkTheme = false;
 		bool hasRoundCorners = true;
 		bool isTransparent = true;
-		
+
 		DXData dx{};
 		InitD3D(&dx, *gameView);
 
@@ -124,7 +129,7 @@ int main()
 				}
 			};
 
-		const auto OnKeyPressed = [&mainWindow, &isDarkTheme, &hasRoundCorners, &isTransparent](const Elos::Event::KeyPressed& e)
+		const auto OnKeyPressed = [&](const Elos::Event::KeyPressed& e)
 			{
 				if (e.Key == Elos::KeyCode::Escape)
 				{
@@ -153,20 +158,26 @@ int main()
 					std::println("Set window transparent: {}", isTransparent);
 					Elos::WindowExtensions::SetTransparency(mainWindow->GetHandle(), static_cast<Elos::byte>(isTransparent ? 128 : 255));
 				}
+
+				if (e.Key == Elos::KeyCode::F)
+				{
+					// Toggle FPS cap
+					gameTimer.SetTargetFPS(gameTimer.GetTargetFPS() < 0.0f ? 60.0f : -1.0f);
+				}
 			};
 
 		const auto OnWindowResize = [&mainWindow, &gameView, &dx](const Elos::Event::Resized& e)
-		{
+			{
 				dx.d2dRenderTarget.Reset();
 				dx.dxgiSurface.Reset();
 
-				ResizeDX(&dx,e);
+				ResizeDX(&dx, e);
 				Create2DResources(&dx, *gameView);  // Should be same as InitD3D window
-		};
+			};
 #pragma endregion
 
 
-		float t = 0.0f;
+		float animationTime = 0.0f;
 
 		while (mainWindow->IsOpen())
 		{
@@ -175,7 +186,7 @@ int main()
 				{
 					std::println("Main Window clicked at position: ({}, {})", e.X, e.Y);
 				});
-			
+
 			// Handle game view events
 			if (gameView && gameView->IsOpen())
 			{
@@ -211,58 +222,78 @@ int main()
 				);
 			}
 
-			t += 0.001f;
-
-			auto context = dx.d3d->GetD3DDeviceContext();
-			auto renderTarget = dx.d3d->GetRenderTargetView();
-			auto depthStencil = dx.d3d->GetDepthStencilView();
-
-			context->ClearRenderTargetView(renderTarget, Colors::DarkSlateBlue);
-			context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-			context->OMSetRenderTargets(1, &renderTarget, depthStencil);
-
-			// Set the viewport.
-			auto viewport = dx.d3d->GetScreenViewport();
-			context->RSSetViewports(1, &viewport);
-
-			dx.shape->Draw(dx.world, dx.view, dx.proj);
-
-			HRESULT hr{ S_OK };
-			DXGI_SWAP_CHAIN_DESC desc;
-			hr = dx.d3d->GetSwapChain()->GetDesc(&desc);
-
-			if (SUCCEEDED(hr) && dx.d2dRenderTarget)
+			// Update game logic and render using the timer
+			gameTimer.Tick([&](const Elos::Timer::TimeInfo& timeInfo) 
 			{
-				D2D1_SIZE_F targetSize = dx.d2dRenderTarget->GetSize();
-				ComPtr<ID2D1SolidColorBrush> brush;
-				D2D1_COLOR_F color{ 1.0f, 0.0f, 0.0f, 1.0f };
-				hr = dx.d2dRenderTarget->CreateSolidColorBrush(color, &brush);
+				// Update animation time based on actual elapsed time
+				animationTime += static_cast<float>(timeInfo.DeltaTime);
 
-				dx.d2dRenderTarget->BeginDraw();
+				// Log frame stats every 60 frames
+				if (timeInfo.FrameCount % 60 == 0) 
+				{
+					const auto msg = std::format("Frame Count: {} | FPS: {} | Frame Time: {:.4f}ms | Total Time: {:.3f}s",
+						timeInfo.FrameCount,
+						timeInfo.FPS,
+						timeInfo.DeltaTime * 1000.0,
+						timeInfo.TotalTime);
 
-				brush->SetTransform(D2D1::Matrix3x2F::Scale(targetSize));
-				D2D1_RECT_F rect = D2D1::RectF(
-					100.0f,
-					100.0f,
-					std::abs(std::sinf(t) * 500.0f),
-					std::abs(std::cosf(t) * 500.0f));
+					mainWindow->SetTitle(msg);
+				}
 
-				D2D1_ELLIPSE ellipse = D2D1::Ellipse({ 500.0f, 500.0f }, std::abs(std::sinf(t) * 500.0f), std::abs(std::sinf(t) * 500.0f));
+				// Render the scene
+				auto context = dx.d3d->GetD3DDeviceContext();
+				auto renderTarget = dx.d3d->GetRenderTargetView();
+				auto depthStencil = dx.d3d->GetDepthStencilView();
 
-				dx.d2dRenderTarget->DrawRectangle(&rect, brush.Get(), 5.0f);
-				dx.d2dRenderTarget->DrawEllipse(ellipse, brush.Get(), 7.0f);
+				context->ClearRenderTargetView(renderTarget, Colors::DarkSlateBlue);
+				context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+				context->OMSetRenderTargets(1, &renderTarget, depthStencil);
 
-				dx.d2dRenderTarget->EndDraw();
-			}
+				// Set the viewport.
+				auto viewport = dx.d3d->GetScreenViewport();
+				context->RSSetViewports(1, &viewport);
 
+				// Rotate cube based on elapsed time
+				dx.world = Matrix::CreateRotationY(animationTime * 0.5f);
+				dx.shape->Draw(dx.world, dx.view, dx.proj);
 
-			dx.d3d->Present();
+				HRESULT hr{ S_OK };
+				DXGI_SWAP_CHAIN_DESC desc;
+				hr = dx.d3d->GetSwapChain()->GetDesc(&desc);
 
-			if (mainWindow) mainWindow->Redraw();
-			if (gameView) gameView->Redraw();
-			if (settingsWindow) settingsWindow->Redraw();
+				if (SUCCEEDED(hr) && dx.d2dRenderTarget)
+				{
+					D2D1_SIZE_F targetSize = dx.d2dRenderTarget->GetSize();
+					ComPtr<ID2D1SolidColorBrush> brush;
+					D2D1_COLOR_F color{ 1.0f, 0.0f, 0.0f, 1.0f };
+					hr = dx.d2dRenderTarget->CreateSolidColorBrush(color, &brush);
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+					dx.d2dRenderTarget->BeginDraw();
+
+					brush->SetTransform(D2D1::Matrix3x2F::Scale(targetSize));
+					D2D1_RECT_F rect = D2D1::RectF(
+						100.0f,
+						100.0f,
+						std::abs(std::sinf(animationTime) * 500.0f),
+						std::abs(std::cosf(animationTime) * 500.0f));
+
+					D2D1_ELLIPSE ellipse = D2D1::Ellipse(
+						{ 500.0f, 500.0f },
+						std::abs(std::sinf(animationTime) * 500.0f),
+						std::abs(std::sinf(animationTime) * 500.0f));
+
+					dx.d2dRenderTarget->DrawRectangle(&rect, brush.Get(), 5.0f);
+					dx.d2dRenderTarget->DrawEllipse(ellipse, brush.Get(), 7.0f);
+
+					dx.d2dRenderTarget->EndDraw();
+				}
+
+				dx.d3d->Present();
+
+				if (mainWindow) mainWindow->Redraw();
+				if (gameView) gameView->Redraw();
+				if (settingsWindow) settingsWindow->Redraw();
+			});
 		}
 	}
 	catch (const std::exception& e)
