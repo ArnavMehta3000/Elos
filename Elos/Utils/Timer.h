@@ -12,13 +12,13 @@ namespace Elos
 	public:
 		struct TimeInfo
 		{
-			f64 DeltaTime;
-			f64 TotalTime;
-			u64 FrameCount;
-			u32 FPS;
-			bool IsFixedTimeStep;
-			f64 TargetDeltaTime;
-			f64 TargetFPS;
+			f64 DeltaTime        = 0.0f;
+			f64 TotalTime        = 0.0f;
+			u64 FrameCount       = 0;
+			u32 FPS              = 0;
+			bool IsFixedTimeStep = false;
+			f64 TargetDeltaTime  = 0.0f;
+			f64 TargetFPS        = 0.0f;
 		};
 
 		using ClockType    = std::chrono::high_resolution_clock;
