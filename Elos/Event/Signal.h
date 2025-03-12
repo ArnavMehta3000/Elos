@@ -52,7 +52,7 @@ namespace Elos
 		{
 			auto it = std::ranges::find_if(m_slots, [id](const auto& slot) 
 			{
-				return slot->id == id;
+				return slot->Id == id;
 			});
 
 			if (it != m_slots.end())
@@ -130,7 +130,7 @@ namespace Elos
 
 				m_slotInfo->ParentSignal = nullptr;
 				m_slotInfo.reset();
-				return signal->disconnect(id);
+				return signal->Disconnect(id);
 			}
 			return false;
 		}
