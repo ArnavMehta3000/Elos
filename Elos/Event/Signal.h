@@ -34,7 +34,7 @@ namespace Elos
 		Signal& operator=(const Signal&) = delete;
 
 		template <Invocable<Args...> Callable>
-		NODISCARD Connection<Args> Connect(Callable&& callable)
+		NODISCARD Connection<Args...> Connect(Callable&& callable)
 		{
 			static ConnectionId nextId = 0;
 			ConnectionId id = ++nextId;
@@ -77,11 +77,11 @@ namespace Elos
 		{
 			for (const auto& slot : m_slots)
 			{
-				slot->function(args...);
+				slot->Function(args...);
 			}
 		}
 
-		NODISCARD u64 ConnectionCount() const noexcept { return m_slots.size() };
+		NODISCARD u64 ConnectionCount() const noexcept { return m_slots.size(); }
 		NODISCARD bool HasConnections() const noexcept { return !m_slots.empty();}
 
 		void operator()(Args... args) const
@@ -94,7 +94,7 @@ namespace Elos
 		{
 			ConnectionId Id;
 			SlotFunction Function;
-			Signal<Args...>* ParentSignal - nullptr;
+			Signal<Args...>* ParentSignal = nullptr;
 		};
 
 		std::vector<std::shared_ptr<SlotInfo>> m_slots;
