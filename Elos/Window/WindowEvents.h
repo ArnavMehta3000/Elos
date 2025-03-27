@@ -3,8 +3,8 @@
 #include <Elos/Common/FunctionMacros.h>
 #include <Elos/Window/WindowTypes.h>
 #include <Elos/Window/Input/KeyCode.h>
+#include <Elos/Event/Signal.h>
 #include <variant>
-#include <concepts>
 #include <type_traits>
 
 namespace Elos
@@ -158,5 +158,41 @@ namespace Elos
 
 	private:
 		EventVariant m_eventData;
+	};
+
+	struct WindowEventSignals
+	{
+		Signal<const Event::Closed&>              OnClosed;
+		Signal<const Event::FocusLost&>           OnFocusLost;
+		Signal<const Event::FocusGained&>         OnFocusGained;
+		Signal<const Event::MouseEntered&>        OnMouseEntered;
+		Signal<const Event::MouseLeft&>           OnMouseLeft;
+		Signal<const Event::Resized&>             OnResized;
+		Signal<const Event::TextInput&>           OnTextInput;
+		Signal<const Event::KeyPressed&>          OnKeyPressed;
+		Signal<const Event::KeyReleased&>         OnKeyReleased;
+		Signal<const Event::MouseWheelScrolled&>  OnMouseWheelScrolled;
+		Signal<const Event::MouseButtonPressed&>  OnMouseButtonPressed;
+		Signal<const Event::MouseButtonReleased&> OnMouseButtonReleased;
+		Signal<const Event::MouseMoved&>          OnMouseMoved;
+		Signal<const Event::MouseMovedRaw&>       OnMouseMovedRaw;
+	};
+
+	struct WindowEventConnections
+	{
+		Connection<const Event::Closed&>              OnClosed;
+		Connection<const Event::FocusLost&>           OnFocusLost;
+		Connection<const Event::FocusGained&>         OnFocusGained;
+		Connection<const Event::MouseEntered&>        OnMouseEntered;
+		Connection<const Event::MouseLeft&>           OnMouseLeft;
+		Connection<const Event::Resized&>             OnResized;
+		Connection<const Event::TextInput&>           OnTextInput;
+		Connection<const Event::KeyPressed&>          OnKeyPressed;
+		Connection<const Event::KeyReleased&>         OnKeyReleased;
+		Connection<const Event::MouseWheelScrolled&>  OnMouseWheelScrolled;
+		Connection<const Event::MouseButtonPressed&>  OnMouseButtonPressed;
+		Connection<const Event::MouseButtonReleased&> OnMouseButtonReleased;
+		Connection<const Event::MouseMoved&>          OnMouseMoved;
+		Connection<const Event::MouseMovedRaw&>       OnMouseMovedRaw;
 	};
 }
