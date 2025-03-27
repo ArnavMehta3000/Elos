@@ -191,7 +191,7 @@ int main()
 			ptr->Increment();
 		});
 
-		ptr2.Dispatch<ICounter>([](auto& ptr)
+		ptr2.Dispatch<ICounter>([](MAYBE_UNUSED auto& ptr)
 		{
 			assert(ptr->GetCount() == 1 && "Count should be shared between pointers");
 		});

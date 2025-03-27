@@ -176,6 +176,24 @@ namespace Elos
 		Signal<const Event::MouseButtonReleased&> OnMouseButtonReleased;
 		Signal<const Event::MouseMoved&>          OnMouseMoved;
 		Signal<const Event::MouseMovedRaw&>       OnMouseMovedRaw;
+
+		void DisconnectAll()
+		{
+			OnClosed.DisconnectAll();
+			OnFocusLost.DisconnectAll();
+			OnFocusGained.DisconnectAll();
+			OnMouseEntered.DisconnectAll();
+			OnMouseLeft.DisconnectAll();
+			OnResized.DisconnectAll();
+			OnTextInput.DisconnectAll();
+			OnKeyPressed.DisconnectAll();
+			OnKeyReleased.DisconnectAll();
+			OnMouseWheelScrolled.DisconnectAll();
+			OnMouseButtonPressed.DisconnectAll();
+			OnMouseButtonReleased.DisconnectAll();
+			OnMouseMoved.DisconnectAll();
+			OnMouseMovedRaw.DisconnectAll();
+		}
 	};
 
 	struct WindowEventConnections
@@ -194,5 +212,23 @@ namespace Elos
 		Connection<const Event::MouseButtonReleased&> OnMouseButtonReleased;
 		Connection<const Event::MouseMoved&>          OnMouseMoved;
 		Connection<const Event::MouseMovedRaw&>       OnMouseMovedRaw;
+
+		void DisconnectAll()
+		{
+			OnClosed.Disconnect();
+			OnFocusLost.Disconnect();
+			OnFocusGained.Disconnect();
+			OnMouseEntered.Disconnect();
+			OnMouseLeft.Disconnect();
+			OnResized.Disconnect();
+			OnTextInput.Disconnect();
+			OnKeyPressed.Disconnect();
+			OnKeyReleased.Disconnect();
+			OnMouseWheelScrolled.Disconnect();
+			OnMouseButtonPressed.Disconnect();
+			OnMouseButtonReleased.Disconnect();
+			OnMouseMoved.Disconnect();
+			OnMouseMovedRaw.Disconnect();
+		}
 	};
 }
