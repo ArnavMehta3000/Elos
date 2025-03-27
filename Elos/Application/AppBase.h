@@ -11,7 +11,7 @@ namespace Elos
 	public:
 		virtual ~AppBase();
 		
-		virtual void GetWindowCreateInfo(WindowCreateInfo& outCreateInfo);
+		void ProcessWindowEvents();
 
 		template <typename EventType>
 		void SetUpConnection(WindowEventConnections& connections, const std::function<void(EventType)>& func)
@@ -21,7 +21,7 @@ namespace Elos
 
 	protected:
 		AppBase();
-		void ProcessWindowEvents();
+		virtual void GetWindowCreateInfo(WindowCreateInfo& outCreateInfo);
 
 	protected:
 		std::unique_ptr<Window> m_window;
