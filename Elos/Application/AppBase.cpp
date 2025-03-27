@@ -2,7 +2,7 @@
 
 namespace Elos
 {
-	AppBase::AppBase()
+	void AppBase::InitializeWindow()
 	{
 		// Create window
 		WindowCreateInfo info{};

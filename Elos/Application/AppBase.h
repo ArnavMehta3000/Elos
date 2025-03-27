@@ -19,8 +19,11 @@ namespace Elos
 			static_assert(false, "AppBase::SetUpConnection not specialized for non-event types");
 		}
 
+		Window* GetWindow() const { return m_window.get(); }
+
 	protected:
-		AppBase();
+		AppBase() = default;
+		void InitializeWindow();
 		virtual void GetWindowCreateInfo(WindowCreateInfo& outCreateInfo);
 
 	protected:
