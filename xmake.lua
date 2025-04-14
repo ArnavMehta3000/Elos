@@ -44,6 +44,14 @@ target("Elos")
 	add_tests("CompileSuccess", { build_should_pass = true, group = "Compilation" })
 target_end()
 
+
+local ignore_tests =
+{
+	-- Test name = Reason
+    ["TestWindowNestedD2DInterop"] = "GUI application with nested windows & D2D interop",
+    ["TestAppBase"] = "GUI application base",
+}
+
 local test_path = path.join(os.projectdir(), "Test")
 for _, test_dir in ipairs(os.dirs(path.join(test_path, "*"))) do
 	local main_file = path.join(test_dir, "Main.cpp")
@@ -56,17 +64,14 @@ for _, test_dir in ipairs(os.dirs(path.join(test_path, "*"))) do
 		add_defines("ELOS_TESTING")
 		add_tests("CompileSuccess", { build_should_pass = true, group = "Compilation" })
 
-		if test_name == "TestWindow" then   -- Window test requires d2d1.lib
-			add_links("d2d1")
-		end
-
-		if test_name == "TestWindow" or test_name == "TestAppBase" then
-			on_test(function(target, opt)
-                print(format("Test %s skipped (GUI application)", test_name))
+		local skip_message = ignore_tests[test_name]
+        if skip_message then
+            on_test(function(target, opt)
+                print(format("Test %s (%s)", test_name, skip_message))
                 return true
             end)
-		else
-			add_tests("Run" .. test_name, { run_timeout = 2000 })
-		end
+        else
+            add_tests("Run" .. test_name, { run_timeout = 2000 })
+        end
 	target_end()
 end
