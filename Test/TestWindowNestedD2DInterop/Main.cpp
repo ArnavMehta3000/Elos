@@ -9,7 +9,8 @@
 #include "GeometricPrimitive.h"
 #include <format>
 #include <print>
-#include <thread>
+
+#pragma comment(lib, "d2d1.lib")
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
