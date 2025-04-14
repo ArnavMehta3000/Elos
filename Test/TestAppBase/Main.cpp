@@ -3,11 +3,16 @@
 class App : public Elos::AppBase
 {
 public:
-	App() : Elos::AppBase() { ConfigureConnections(); }
+	App() : Elos::AppBase() {}
 
 	void Run()
 	{
-		while (m_window->IsOpen())
+		ConfigureConnections();
+		AppBase::InitializeWindow();
+
+		GetWindow()->SetTitle("Test AppBase Window");
+
+		while (GetWindow()->IsOpen())
 		{
 			ProcessWindowEvents();
 		}

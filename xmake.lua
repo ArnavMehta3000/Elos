@@ -1,5 +1,4 @@
 includes("Xmake/**.lua")
-includes("**/xmake.lua")
 
 add_rules("mode.debug", "mode.release")
 
@@ -27,7 +26,6 @@ if is_mode("release") then
 end
 
 add_defines("UNICODE", "_UNICODE", "NOMINMAX", "NOMCX", "NOSERVICE", "NOHELP", "WIN32_LEAN_AND_MEAN")
-add_tests("CompileSuccess", { build_should_pass = true, group = "Compilation" })
 
 add_requires("directxtk")
 add_packages("directxtk")
@@ -42,4 +40,33 @@ target("Elos")
 	add_headerfiles("(Elos/**.h)", { install = true })
 
 	add_links("user32", "gdi32", "dwmapi", "shcore", "Comctl32")
+
+	add_tests("CompileSuccess", { build_should_pass = true, group = "Compilation" })
 target_end()
+
+local test_path = path.join(os.projectdir(), "Test")
+for _, test_dir in ipairs(os.dirs(path.join(test_path, "*"))) do
+	local main_file = path.join(test_dir, "Main.cpp")
+	local test_name = path.basename(test_dir)
+
+	target(test_name)
+		set_group("Elos/Tests")
+		add_files(test_dir .. "**.cpp")
+		add_deps("Elos")
+		add_defines("ELOS_TESTING")
+		add_tests("CompileSuccess", { build_should_pass = true, group = "Compilation" })
+
+		if test_name == "TestWindow" then   -- Window test requires d2d1.lib
+			add_links("d2d1")
+		end
+
+		if test_name == "TestWindow" or test_name == "TestAppBase" then
+			on_test(function(target, opt)
+                print(format("Test %s skipped (GUI application)", test_name))
+                return true
+            end)
+		else
+			add_tests("Run" .. test_name, { run_timeout = 2000 })
+		end
+	target_end()
+end
