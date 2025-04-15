@@ -48,8 +48,9 @@ target_end()
 local ignore_tests =
 {
 	-- Test name = Reason
-    ["TestWindowNestedD2DInterop"] = "GUI application with nested windows & D2D interop",
-    ["TestAppBase"] = "GUI application base",
+	["TestWindowNestedD2DInterop"] = "GUI application with nested windows & D2D interop",
+	["TestAppBase"] = "GUI application base",
+	["TestWindowUI"] = "GUI application to test window UI components",
 }
 
 local test_path = path.join(os.projectdir(), "Test")
@@ -65,13 +66,13 @@ for _, test_dir in ipairs(os.dirs(path.join(test_path, "*"))) do
 		add_tests("CompileSuccess", { build_should_pass = true, group = "Compilation" })
 
 		local skip_message = ignore_tests[test_name]
-        if skip_message then
-            on_test(function(target, opt)
-                print(format("Test %s (%s)", test_name, skip_message))
-                return true
-            end)
-        else
-            add_tests("Run" .. test_name, { run_timeout = 2000 })
-        end
+		if skip_message then
+			on_test(function(target, opt)
+				print(format("Test %s (%s)", test_name, skip_message))
+				return true
+			end)
+		else
+			add_tests("Run" .. test_name, { run_timeout = 2000 })
+		end
 	target_end()
 end

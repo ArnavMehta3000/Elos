@@ -120,4 +120,48 @@ namespace Elos
 			::SetWindowPos(windowHandle, nullptr, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
 		}
 	}
+	
+	void WindowExtensions::RemoveBorder(const WindowHandle& windowHandle)
+	{
+		// Get current styles
+		LONG_PTR style = ::GetWindowLongPtr(windowHandle, GWL_STYLE);
+		LONG_PTR exStyle = ::GetWindowLongPtr(windowHandle, GWL_EXSTYLE);
+
+		// Clear all border and frame styles first
+		style &= ~(WS_THICKFRAME | WS_BORDER | WS_DLGFRAME);
+		exStyle &= ~(WS_EX_CLIENTEDGE | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME);
+
+		// Apply the new styles
+		::SetWindowLongPtr(windowHandle, GWL_STYLE, style);
+		::SetWindowLongPtr(windowHandle, GWL_EXSTYLE, exStyle);
+
+		// Update the window after changing styles
+		::SetWindowPos(windowHandle, nullptr, 0, 0, 0, 0,
+			SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+	}
+	
+	void WindowExtensions::AddBorder(const WindowHandle& windowHandle, bool isResizable)
+	{
+		// Get current styles
+		LONG_PTR style = ::GetWindowLongPtr(windowHandle, GWL_STYLE);
+		LONG_PTR exStyle = ::GetWindowLongPtr(windowHandle, GWL_EXSTYLE);
+
+		// Clear all border and frame styles first
+		style &= ~(WS_THICKFRAME | WS_BORDER | WS_DLGFRAME);
+		exStyle &= ~(WS_EX_CLIENTEDGE | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME);
+
+		if (isResizable)
+		{
+			style |= WS_THICKFRAME;  // Ressizable with border
+		}
+		else
+		{
+			style |= WS_BORDER;  // Non-ressizable with border
+			exStyle |= WS_EX_CLIENTEDGE;
+		}
+
+		// Apply the new styles
+		::SetWindowLongPtr(windowHandle, GWL_STYLE, style);
+		::SetWindowLongPtr(windowHandle, GWL_EXSTYLE, exStyle);
+	}
 }

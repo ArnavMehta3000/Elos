@@ -22,5 +22,7 @@ namespace  Elos
 		static void SetTransparency(const WindowHandle& windowHandle, const byte alpha);
 		static void RoundCorners(const WindowHandle& windowHandle, const CornerPreference preference);
 		static void EnableDarkMode(const WindowHandle& windowHandle, const bool enable);
+		static void RemoveBorder(const WindowHandle& windowHandle);
+		static void AddBorder(const WindowHandle& windowHandle, bool isResizable);
 	};
 }

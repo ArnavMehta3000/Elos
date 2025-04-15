@@ -98,6 +98,7 @@ int main()
 			Elos::WindowCreateInfo::ChildEmbedded(mainWindow, "Game View", { 800, 600 }));
 		gameView->SetMinimumSize({ 100, 100 });
 		gameView->SetBackgroundColor(RGB(16, 18, 24));
+		Elos::WindowExtensions::RemoveBorder(gameView->GetHandle());
 
 		bool isDarkTheme = false;
 		bool hasRoundCorners = true;
